@@ -12,15 +12,17 @@ namespace EzAdb;
 
 internal sealed partial class Dashboard
 {
-    private sealed class StudioSession(Device device, string kind, CancellationTokenSource cancellation)
+    private sealed class StudioSession(Device device, string kind, CancellationTokenSource cancellation, string? audioApp)
     {
         public Device Device { get; } = device;
         public string Kind { get; } = kind;
         public CancellationTokenSource Cancellation { get; } = cancellation;
         public int? DisplayId { get; set; }
         public MacroSession? Macros { get; set; }
+        public string? AudioApp { get; } = audioApp;
         public Task Completion { get; set; } = Task.CompletedTask;
-        public override string ToString() => $"{Kind}  ·  {Device.DisplayName}" + (DisplayId is { } id ? $"  ·  Display {id}" : "");
+        public override string ToString() => $"{Kind}  ·  {Device.DisplayName}" + (DisplayId is { } id ? $"  ·  Display {id}" : "") +
+            (AudioApp is not null ? $"  ·  Audio: {AudioApp}" : "");
     }
 
     private readonly ObservableCollection<StudioSession> studioSessions = [];
@@ -42,6 +44,8 @@ internal sealed partial class Dashboard
                     (studioSessions.Where(item => item.DisplayId is not null).ToArray() is [var displaySession] ? displaySession : null);
                 if (session is not { DisplayId: { } id })
                     throw new InvalidOperationException("Choose an active virtual display.");
+                if (session.AudioApp is not null)
+                    throw new InvalidOperationException("Start a new virtual display to change the app for isolated audio.");
                 if (PickAndroidApp(session.Device, this) is { } app && studioSessions.Contains(session))
                 {
                     await AndroidShell(session.Device, Launch(app.Package, id));
@@ -229,6 +233,11 @@ internal sealed partial class Dashboard
         var width = UiField("Width", "1280", 110);
         var height = UiField("Height", "800", 110);
         var dpi = UiField("Density", "240", 110);
+        var appAudio = UiCheck("Play only the selected app’s audio on this PC (experimental)");
+        appAudio.IsEnabled = File.Exists(AdbTools.AppAudioServerPath);
+        appAudio.ToolTip = appAudio.IsEnabled
+            ? "Requires Android 13 or later. This session routes audio from the app selected at launch."
+            : "The optional EzAdb app audio server is missing.";
         var appLabel = UiText("No app selected.");
         Device? target = null;
         LaunchableApp? choice = null;
@@ -240,6 +249,7 @@ internal sealed partial class Dashboard
                 target = device;
                 choice = null;
                 withoutApp = false;
+                appAudio.IsChecked = false;
                 appLabel.Text = "No app selected.";
             }
         };
@@ -266,18 +276,52 @@ internal sealed partial class Dashboard
                 appLabel.Text = "The display will open without an app.";
                 return Task.CompletedTask;
             })),
+            appAudio,
             UiAction("Open virtual display", async () =>
             {
                 var device = RequireDevice();
-                await RequireAndroid(device, 29, "Virtual displays");
+                var isolateAudio = appAudio.IsChecked == true;
+                await RequireAndroid(device, isolateAudio ? 33 : 29, isolateAudio ? "Isolated app audio" : "Virtual displays");
                 var dimensions = $"{ReadNumber(width, "Width", 160, 8192)}x{ReadNumber(height, "Height", 160, 8192)}/{ReadNumber(dpi, "Density", 72, 1000)}";
                 if (!Equals(device, CurrentReadyDevice)) return;
-                if (choice is null && !withoutApp && !SelectApp(device)) return;
-                var package = choice?.Package;
-                string[] options = [$"--new-display={dimensions}", "--no-audio", "--display-ime-policy=local"];
-                BeginStudio(device, "Virtual display", package is null ? options : [..options, $"--start-app={package}"]);
+                if (choice is null && (!withoutApp || isolateAudio) && !SelectApp(device)) return;
+                var app = choice;
+                string? server = null;
+                int? uid = null;
+                if (isolateAudio)
+                {
+                    server = await tools.RequireAppAudioServerAsync(lifetime.Token);
+                    uid = IsolatedAppUid(await AndroidShell(device, "pm list packages -U --user current"), app!.Package);
+                    if (!Equals(device, CurrentReadyDevice)) return;
+                    if (studioSessions.Any(session => session.Device.Serial == device.Serial && session.AudioApp == app.Package))
+                        throw new InvalidOperationException("This app already has an isolated audio session on the device.");
+                }
+                BeginStudio(device, "Virtual display", VirtualDisplayOptions(dimensions, app?.Package, uid),
+                    serverOverride: server, audioApp: isolateAudio ? app!.Package : null);
             }, true),
             UiText("Requires Android 10 or later. Each display has its own window. Android determines which apps can open there."));
+    }
+
+    internal static string[] VirtualDisplayOptions(string dimensions, string? package, int? appUid)
+    {
+        if (appUid.HasValue && package is null)
+            throw new ArgumentException("Choose an app for isolated audio.");
+        string[] audio = appUid is { } uid
+            ? ["--audio-source=playback", $"--audio-encoder=ezadb.uid.{uid}", "--require-audio"]
+            : ["--no-audio"];
+        string[] options = [$"--new-display={dimensions}", "--display-ime-policy=local", ..audio];
+        return package is not null ? [..options, $"--start-app={package}"] : options;
+    }
+
+    internal static int IsolatedAppUid(string packages, string selectedPackage)
+    {
+        var entries = Regex.Matches(packages, @"(?m)^package:(\S+)\s+uid:(\d+)\s*$").Cast<Match>()
+            .Select(match => (Name: match.Groups[1].Value,
+                Uid: int.TryParse(match.Groups[2].Value, out var uid) ? uid : -1)).Distinct().ToArray();
+        if (entries.Where(entry => entry.Name == selectedPackage).ToArray() is [(_, var uid)] &&
+            uid % 100000 is >= 10000 and < 20000 && entries.Count(entry => entry.Uid == uid) == 1)
+            return uid;
+        throw new InvalidOperationException("Android did not report a unique app UID. Audio was not redirected.");
     }
 
     private async Task RequireAndroid(Device device, int minimum, string feature)
@@ -298,18 +342,19 @@ internal sealed partial class Dashboard
         return dialog.ShowDialog(this) == true ? dialog.FileName : null;
     }
 
-    private void BeginStudio(Device device, string kind, string[] options, string? destination = null)
+    private void BeginStudio(Device device, string kind, string[] options, string? destination = null,
+        string? serverOverride = null, string? audioApp = null)
     {
         if (closingStudio || lifetime.IsCancellationRequested) return;
         if (kind != "Virtual display" && studioSessions.Any(session => session.Device.Serial == device.Serial && session.Kind == kind))
             throw new InvalidOperationException($"{device.DisplayName} already has this session running.");
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
-        var session = new StudioSession(device, kind, cancellation);
+        var session = new StudioSession(device, kind, cancellation, audioApp);
         studioSessions.Add(session);
-        session.Completion = RunStudioAsync(session, options, destination);
+        session.Completion = RunStudioAsync(session, options, destination, serverOverride);
     }
 
-    private async Task RunStudioAsync(StudioSession session, string[] options, string? destination)
+    private async Task RunStudioAsync(StudioSession session, string[] options, string? destination, string? serverOverride)
     {
         var scratch = destination is null ? null : Path.Combine(Path.GetDirectoryName(destination)!, $".EzAdb-{Guid.NewGuid():N}.mp4");
         var title = $"EzAdb · {session.Kind} · {session.Device.DisplayName} · {Guid.NewGuid().ToString("N")[..5]}";
@@ -328,8 +373,9 @@ internal sealed partial class Dashboard
             });
             var result = await tools.RunScrcpyAsync(session.Device, title, options, token, progress,
                 started: session.Kind == "Virtual display"
-                    ? process => session.Macros = TrackMacroSession(process, session.Device, token, () => session.DisplayId)
-                    : null);
+                    ? process => session.Macros = TrackMacroSession(process, session.Device, token, () => session.DisplayId,
+                        appLocked: session.AudioApp is not null)
+                    : null, serverOverride: serverOverride);
             result.RequireSuccess();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }

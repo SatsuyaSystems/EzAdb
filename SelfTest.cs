@@ -37,6 +37,11 @@ internal static class SelfTest
             {
                 return 3;
             }
+            if (File.Exists(AdbTools.AppAudioServerPath))
+            {
+                _ = (tools.Scrcpy is null ? AdbTools.VerifyAppAudioServerAsync(CancellationToken.None)
+                    : tools.RequireAppAudioServerAsync(CancellationToken.None)).GetAwaiter().GetResult();
+            }
             var missingAdb = "adb.exe was not found.";
             if (incompleteToolsFolder is not null)
             {
@@ -297,6 +302,16 @@ internal static class SelfTest
             "@ram\nMemTotal: 8000 kB\nMemAvailable: 2500 kB\n@storage\nfs 37000 25000 12000 68% /sdcard\n@info\nGoogle\nPixel\n16\n36\narm64-v8a\n");
         Require(data is { Battery: 79, Temperature: 32.5, Cpu: 4.2, RamUsed: 5500, StorageUsed: 25000 }, "Device monitor");
         Require(Dashboard.ParseDisplayId("[server] INFO: New display: 1280x800/240 (id=4)") == 4, "Virtual display ID");
+        var isolatedUid = Dashboard.IsolatedAppUid("package:org.demo.video uid:10123\r\npackage:org.demo.music uid:10124\n", "org.demo.video");
+        Require(isolatedUid == 10123 &&
+            Dashboard.VirtualDisplayOptions("1280x800/240", "org.demo.video", isolatedUid) is
+                ["--new-display=1280x800/240", "--display-ime-policy=local", "--audio-source=playback",
+                 "--audio-encoder=ezadb.uid.10123", "--require-audio", "--start-app=org.demo.video"] &&
+            Dashboard.VirtualDisplayOptions("1280x800/240", null, null).Contains("--no-audio"), "Isolated virtual display audio arguments");
+        bool sharedUidRejected = false;
+        try { Dashboard.IsolatedAppUid("package:org.demo.video uid:10123\npackage:org.demo.music uid:10123\n", "org.demo.video"); }
+        catch (InvalidOperationException) { sharedUidRejected = true; }
+        Require(sharedUidRejected, "Reject shared Android audio UID");
         Require(Dashboard.RecordingOptions(1920, 30, 8, false, true).Contains("--no-audio") &&
             Dashboard.RecordingOptions(1920, 30, 8, true, true).Contains("--audio-dup"), "MP4 recording options");
 

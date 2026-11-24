@@ -1,0 +1,124 @@
+--- a/server/src/main/java/com/genymobile/scrcpy/Options.java
++++ b/server/src/main/java/com/genymobile/scrcpy/Options.java
+@@ -227,6 +227,20 @@
+         return audioEncoder;
+     }
+ 
++    // The stock 5.0.1 desktop client forwards this option unchanged.
++    public int takeEzAdbAudioUid() {
++        if (audioEncoder == null || !audioEncoder.startsWith("ezadb.uid.")) {
++            return -1;
++        }
++        int uid = Integer.parseInt(audioEncoder.substring("ezadb.uid.".length()));
++        if (uid < 0 || uid % 100000 < 10000 || uid % 100000 >= 20000 || audioSource != AudioSource.PLAYBACK || audioDup
++                || newDisplay == null) {
++            throw new IllegalArgumentException("EzAdb app audio requires an app UID and isolated virtual-display playback");
++        }
++        audioEncoder = null;
++        return uid;
++    }
++
+     public boolean getPowerOffScreenOnClose() {
+         return this.powerOffScreenOnClose;
+     }
+--- a/server/src/main/java/com/genymobile/scrcpy/Server.java
++++ b/server/src/main/java/com/genymobile/scrcpy/Server.java
+@@ -123,7 +123,7 @@
+                 if (audioSource.isDirect()) {
+                     audioCapture = new AudioDirectCapture(audioSource);
+                 } else {
+-                    audioCapture = new AudioPlaybackCapture(options.getAudioDup());
++                    audioCapture = new AudioPlaybackCapture(options.getAudioDup(), options.takeEzAdbAudioUid());
+                 }
+ 
+                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendStreamMeta(), options.getSendFrameMeta());
+--- a/server/src/main/java/com/genymobile/scrcpy/audio/AudioPlaybackCapture.java
++++ b/server/src/main/java/com/genymobile/scrcpy/audio/AudioPlaybackCapture.java
+@@ -20,12 +20,16 @@
+ public final class AudioPlaybackCapture implements AudioCapture {
+ 
+     private final boolean keepPlayingOnDevice;
++    private final int targetUid;
++    private Object registeredPolicy;
++    private Method unregisterPolicy;
+ 
+     private AudioRecord recorder;
+     private AudioRecordReader reader;
+ 
+-    public AudioPlaybackCapture(boolean keepPlayingOnDevice) {
++    public AudioPlaybackCapture(boolean keepPlayingOnDevice, int targetUid) {
+         this.keepPlayingOnDevice = keepPlayingOnDevice;
++        this.targetUid = targetUid;
+     }
+ 
+     @TargetApi(AndroidVersions.API_26_ANDROID_8_0)
+@@ -67,6 +71,11 @@
+                 AudioAttributes attributes = new AudioAttributes.Builder().setUsage(usage).build();
+                 // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
+                 addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
++            }
++
++            if (targetUid != -1) {
++                int matchUid = audioMixingRuleClass.getField("RULE_MATCH_UID").getInt(null);
++                addMixRuleMethod.invoke(audioMixingRuleBuilder, matchUid, targetUid);
+             }
+ 
+             // audioMixingRuleBuilder.voiceCommunicationCaptureAllowed(true);
+@@ -112,15 +121,23 @@
+             // AudioManager.registerAudioPolicyStatic(audioPolicy);
+             Method registerAudioPolicyStaticMethod = AudioManager.class.getDeclaredMethod("registerAudioPolicyStatic", audioPolicyClass);
+             registerAudioPolicyStaticMethod.setAccessible(true);
++            if (targetUid != -1) {
++                unregisterPolicy = AudioManager.class.getDeclaredMethod("unregisterAudioPolicyAsyncStatic", audioPolicyClass);
++                unregisterPolicy.setAccessible(true);
++            }
+             int result = (int) registerAudioPolicyStaticMethod.invoke(null, audioPolicy);
+             if (result != 0) {
+                 throw new RuntimeException("registerAudioPolicy() returned " + result);
+             }
+ 
++            if (targetUid != -1) {
++                registeredPolicy = audioPolicy;
++            }
+             // audioPolicy.createAudioRecordSink(audioPolicy);
+             Method createAudioRecordSinkClass = audioPolicyClass.getMethod("createAudioRecordSink", audioMixClass);
+             return (AudioRecord) createAudioRecordSinkClass.invoke(audioPolicy, audioMix);
+         } catch (Exception e) {
++            stop();
+             Ln.e("Could not capture audio playback", e);
+             throw new AudioCaptureException();
+         }
+@@ -137,8 +154,14 @@
+     @Override
+     public void start() throws AudioCaptureException {
+         recorder = createAudioRecord();
+-        recorder.startRecording();
+-        reader = new AudioRecordReader(recorder);
++        try {
++            recorder.startRecording();
++            reader = new AudioRecordReader(recorder);
++        } catch (RuntimeException e) {
++            stop();
++            Ln.e("Could not start audio playback capture", e);
++            throw new AudioCaptureException();
++        }
+     }
+ 
+     @Override
+@@ -146,6 +169,16 @@
+         if (recorder != null) {
+             // Will call .stop() if necessary, without throwing an IllegalStateException
+             recorder.release();
++            recorder = null;
++        }
++        if (registeredPolicy != null) {
++            try {
++                unregisterPolicy.invoke(null, registeredPolicy);
++            } catch (Exception e) {
++                Ln.w("Could not unregister the EzAdb audio policy", e);
++            } finally {
++                registeredPolicy = null;
++            }
+         }
+     }
+ 

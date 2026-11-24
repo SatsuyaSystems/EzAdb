@@ -1,0 +1,14 @@
+EzAdb app audio server
+
+Based on scrcpy v5.0.1
+Copyright (C) 2018 Genymobile
+https://github.com/Genymobile/scrcpy/tree/v5.0.1
+
+Licensed under the Apache License, Version 2.0.
+
+EzAdb modifies Options.java, Server.java and AudioPlaybackCapture.java to
+route playback for a selected Android app UID and unregister the audio
+policy when the capture stops.
+
+The patch and build script are available in the EzAdb source repository.
+https://github.com/SatsuyaSystems/EzAdb/tree/main/AppAudio

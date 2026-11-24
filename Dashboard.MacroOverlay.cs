@@ -9,7 +9,7 @@ namespace EzAdb;
 internal sealed partial class Dashboard
 {
     internal sealed record MacroSession(Process Process, Device Device, CancellationToken Token, Func<int?>? VirtualDisplay,
-        Func<int?, Task<Size>>? ReadSize)
+        Func<int?, Task<Size>>? ReadSize, bool AppLocked)
     {
         public Window? Controls { get; set; }
         public override string ToString() => VirtualDisplay is null ? $"{Device.ConnectedName} · Screen control" :
@@ -19,9 +19,9 @@ internal sealed partial class Dashboard
     private readonly List<MacroSession> macroSessions = [];
 
     internal MacroSession TrackMacroSession(Process process, Device device, CancellationToken token, Func<int?>? virtualDisplay = null,
-        Func<int?, Task<Size>>? readSize = null)
+        Func<int?, Task<Size>>? readSize = null, bool appLocked = false)
     {
-        var session = new MacroSession(process, device, token, virtualDisplay, readSize);
+        var session = new MacroSession(process, device, token, virtualDisplay, readSize, appLocked);
         macroSessions.Add(session);
         return session;
     }
@@ -191,7 +191,7 @@ internal sealed partial class Dashboard
             else if (running is null) status.Text = "";
             target.Text = targetSession.ToString();
         }
-        if (virtualDisplay is not null)
+        if (virtualDisplay is not null && !targetSession.AppLocked)
         {
             content.Children.Add(RunHere("Open an app on this display", async () =>
             {

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace EzAdb;
@@ -138,9 +139,32 @@ internal sealed class AdbTools
         RunAdbAsync([..DeviceCommands.Target(device), ..arguments], cancellation, seconds, binary, progress: progress);
 
     public Task<CommandResult> RunScrcpyAsync(Device device, string title, string[] options,
-        CancellationToken cancellation, IProgress<string>? progress = null, Action<Process>? started = null) =>
+        CancellationToken cancellation, IProgress<string>? progress = null, Action<Process>? started = null, string? serverOverride = null) =>
         RunAsync(RequireScrcpy(), ["--serial", device.Serial, "--window-title", title, ..options], cancellation,
-            adbOverride: Adb, closeWindow: true, progress: progress, started: started);
+            adbOverride: Adb, closeWindow: true, progress: progress, started: started, serverOverride: serverOverride);
+
+    internal static string AppAudioServerPath => Path.Combine(AppContext.BaseDirectory, "tools", "ezadb-app-audio-server");
+
+    internal static async Task<string> VerifyAppAudioServerAsync(CancellationToken cancellation)
+    {
+        const string expected = "6C35AB977E588B74EFF1C8B7D1152875AE7EE5B41DE88E6F5E7B42C68E1CDD15";
+        var path = AppAudioServerPath;
+        if (!File.Exists(path))
+            throw new InvalidOperationException("The experimental app audio server is missing.");
+        using var server = File.OpenRead(path);
+        if (Convert.ToHexString(await SHA256.HashDataAsync(server, cancellation)) != expected)
+            throw new InvalidOperationException("The experimental app audio server does not match this EzAdb build.");
+        return path;
+    }
+
+    public async Task<string> RequireAppAudioServerAsync(CancellationToken cancellation)
+    {
+        var path = await VerifyAppAudioServerAsync(cancellation);
+        var version = await RunAsync(RequireScrcpy(), ["--version"], cancellation, 8);
+        if (version.ExitCode != 0 || version.Output.TrimStart().Split('\n', 2)[0].Trim() != "scrcpy 5.0.1 <https://github.com/Genymobile/scrcpy>")
+            throw new InvalidOperationException("Isolated app audio requires the official scrcpy 5.0.1 client.");
+        return path;
+    }
 
     public static string? FindFfmpeg() => Find("ffmpeg.exe", new[] { Path.Combine(AppContext.BaseDirectory, "tools"),
         AppContext.BaseDirectory, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -236,7 +260,8 @@ internal sealed class AdbTools
 
     private static async Task<CommandResult> RunAsync(string executable, string[] arguments,
         CancellationToken cancellation, int seconds = 0, bool binary = false, string? input = null,
-        string? adbOverride = null, bool closeWindow = false, IProgress<string>? progress = null, Action<Process>? started = null)
+        string? adbOverride = null, bool closeWindow = false, IProgress<string>? progress = null, Action<Process>? started = null,
+        string? serverOverride = null)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         if (seconds > 0)
@@ -265,6 +290,8 @@ internal sealed class AdbTools
         {
             start.Environment["ADB"] = adbOverride;
         }
+        if (serverOverride is not null)
+            start.Environment["SCRCPY_SERVER_PATH"] = serverOverride;
 
         using var process = StartProcess(start);
         using var stop = token.Register(() => StopProcess(process, closeWindow));
