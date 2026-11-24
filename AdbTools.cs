@@ -12,12 +12,12 @@ internal sealed record Device(string Serial, string State, string Model, string 
     public string DisplayName => Model.Length == 0 ? Serial : Model;
     public bool IsEmulator => UsbPath.Length == 0 && Serial.StartsWith("emulator-", StringComparison.OrdinalIgnoreCase);
     public bool IsWifi => UsbPath.Length == 0 && !IsEmulator && AdbTools.IsWifiAddress(Serial);
-    public string ConnectionLabel => IsEmulator ? "Emulator" : IsWifi ? "WLAN" : "USB";
+    public string ConnectionLabel => IsEmulator ? "Emulator" : IsWifi ? "Wi-Fi" : "USB";
     public string ConnectedName => $"{DisplayName} · {ConnectionLabel}";
     public string StatusLabel => State switch
     {
-        "device" => "Verbunden",
-        "unauthorized" => "Freigabe fehlt",
+        "device" => "Connected",
+        "unauthorized" => "Authorization required",
         "offline" => "Offline",
         _ => State
     };
@@ -34,7 +34,7 @@ internal sealed record CommandResult(int ExitCode, string Output, string Error, 
     {
         if (ExitCode != 0 || (matches is not null && !matches(Output.Trim())))
         {
-            throw new InvalidOperationException(Details.Length > 0 ? Details : $"Exit-Code {ExitCode}");
+            throw new InvalidOperationException(Details.Length > 0 ? Details : $"Exit code {ExitCode}");
         }
     }
 }
@@ -192,7 +192,7 @@ internal sealed class AdbTools
         var actualPath = File.ResolveLinkTarget(executable, returnFinalTarget: true)?.FullName ?? executable;
         if (!File.Exists(Path.Combine(Path.GetDirectoryName(actualPath)!, "scrcpy-server")) && !File.Exists(server))
         {
-            throw new ToolDependencyException("scrcpy.exe", "scrcpy-server fehlt im entpackten Ordner.");
+            throw new ToolDependencyException("scrcpy.exe", "scrcpy-server is missing from the extracted folder.");
         }
         return executable;
     }
@@ -201,7 +201,7 @@ internal sealed class AdbTools
     {
         if (!File.Exists(executable))
         {
-            throw new ToolDependencyException(name, $"{name} wurde nicht gefunden.");
+            throw new ToolDependencyException(name, $"{name} was not found.");
         }
         return executable!;
     }
@@ -213,7 +213,7 @@ internal sealed class AdbTools
     {
         try
         {
-            return Process.Start(start) ?? throw new InvalidOperationException("Prozessstart fehlgeschlagen.");
+            return Process.Start(start) ?? throw new InvalidOperationException("Could not start the process.");
         }
         catch (Win32Exception error) when (error.NativeErrorCode is 2 or 3 or 126 or 127 or 193 or 1157 or 14001)
         {
@@ -287,13 +287,13 @@ internal sealed class AdbTools
             if (IsDependencyError(process.ExitCode))
             {
                 var name = Path.GetFileName(executable);
-                throw new ToolDependencyException(name, $"Eine Bibliothek für {name} fehlt oder ist inkompatibel (0x{process.ExitCode:X8}).");
+                throw new ToolDependencyException(name, $"A dependency for {name} is missing or incompatible (0x{process.ExitCode:X8}).");
             }
             return new CommandResult(process.ExitCode, await output, await error, data.ToArray());
         }
         catch (OperationCanceledException) when (!cancellation.IsCancellationRequested)
         {
-            throw new TimeoutException($"Keine Antwort innerhalb von {seconds} Sekunden.");
+            throw new TimeoutException($"No response within {seconds} seconds.");
         }
         finally
         {

@@ -33,29 +33,29 @@ internal sealed partial class Dashboard
         var recording = BuildRecordingPanel();
         var camera = BuildCameraPanel();
         var display = BuildDisplayPanel(out var deviceChanged);
-        var sessions = UiList("Laufende Studio-Sitzungen", 116);
+        var sessions = UiList("Active Studio sessions", 116);
         sessions.ItemsSource = studioSessions;
         var displayActions = UiRow(
-            UiAction("App für dieses Display auswählen", async () =>
+            UiAction("Choose an app for this display", async () =>
             {
                 var session = sessions.SelectedItem as StudioSession ??
                     (studioSessions.Where(item => item.DisplayId is not null).ToArray() is [var displaySession] ? displaySession : null);
                 if (session is not { DisplayId: { } id })
-                    throw new InvalidOperationException("Wähle ein gestartetes virtuelles Display aus.");
+                    throw new InvalidOperationException("Choose an active virtual display.");
                 if (PickAndroidApp(session.Device, this) is { } app && studioSessions.Contains(session))
                 {
                     await AndroidShell(session.Device, Launch(app.Package, id));
-                    Notify($"{app.Name} auf Display {id} geöffnet.");
+                    Notify($"Opened {app.Name} on display {id}.");
                 }
-            }), UiAction("Makro-Steuerung öffnen", () =>
+            }), UiAction("Open macro controls", () =>
             {
                 if (sessions.SelectedItem is not StudioSession { Macros: { } macros })
-                    throw new InvalidOperationException("Wähle ein laufendes virtuelles Display aus.");
+                    throw new InvalidOperationException("Choose a running virtual display.");
                 ShowMacroControls(macros);
                 return Task.CompletedTask;
             }));
         var tabs = UiRow();
-        (string Label, FrameworkElement View)[] pages = [("Bildschirm aufnehmen", recording), ("Handy-Kamera", camera), ("Virtuelle Displays", display)];
+        (string Label, FrameworkElement View)[] pages = [("Record screen", recording), ("Phone camera", camera), ("Virtual displays", display)];
         void Select(int index)
         {
             var (label, view) = pages[index];
@@ -71,11 +71,11 @@ internal sealed partial class Dashboard
         }
         showStudioTab = Select;
         Select(0);
-        var tracker = UiCard(UiText("Laufende Studio-Sitzungen", true), sessions,
-            UiRow(UiAction("Sitzung stoppen", async () =>
+        var tracker = UiCard(UiText("Active Studio sessions", true), sessions,
+            UiRow(UiAction("Stop session", async () =>
             {
                 var session = sessions.SelectedItem as StudioSession ?? (studioSessions.Count == 1 ? studioSessions[0] : null);
-                if (session is null) throw new InvalidOperationException("Wähle eine Sitzung aus.");
+                if (session is null) throw new InvalidOperationException("Choose a session.");
                 session.Cancellation.Cancel();
                 await session.Completion;
             })), displayActions);
@@ -85,7 +85,7 @@ internal sealed partial class Dashboard
             tracker.Visibility = Visible(studioSessions.Count > 0);
             if (change.NewItems is { Count: > 0 } added) sessions.SelectedItem = added[0];
         };
-        return new DevicePage(UiStack(tabs, host, tracker), "Studio", "Nimm Bildschirm oder Kamera auf und öffne eigenständige Android-Displays.", deviceChanged);
+        return new DevicePage(UiStack(tabs, host, tracker), "Studio", "Record the screen or camera and open separate Android displays.", deviceChanged);
     }
 
     private void OpenStudioTab(int index)
@@ -102,24 +102,24 @@ internal sealed partial class Dashboard
 
     private FrameworkElement BuildRecordingPanel()
     {
-        var size = UiField("Maximale Kantenlänge", "1920", 140);
-        var bitRate = UiField("Videoqualität in Mbit/s", "8", 140);
-        var fps = UiField("Maximale FPS", "30", 110);
-        var audio = UiCheck("Geräteaudio mit aufnehmen");
-        return UiCard(UiText("Bildschirm als MP4 aufnehmen", true),
-            UiRow(Labeled("Max. Kantenlänge (px)", size), Labeled("Qualität (Mbit/s)", bitRate), Labeled("FPS-Limit", fps)),
-            UiRow(audio), UiText("Die Auflösung behält das Seitenverhältnis. Geräteaudio wird ab Android 11 unterstützt, bei Ton am Gerät ab Android 13."),
-            UiAction("Aufnahme starten", async () =>
+        var size = UiField("Maximum side length", "1920", 140);
+        var bitRate = UiField("Video bitrate in Mbit/s", "8", 140);
+        var fps = UiField("Maximum FPS", "30", 110);
+        var audio = UiCheck("Record device audio");
+        return UiCard(UiText("Record the screen as MP4", true),
+            UiRow(Labeled("Max. side length (px)", size), Labeled("Quality (Mbit/s)", bitRate), Labeled("FPS limit", fps)),
+            UiRow(audio), UiText("Recording preserves the aspect ratio. Device audio requires Android 11. Keeping playback on the device while recording requires Android 13."),
+            UiAction("Start recording", async () =>
             {
                 var device = RequireDevice();
-                var edge = ReadNumber(size, "Kantenlänge", 160, 8192);
+                var edge = ReadNumber(size, "Side length", 160, 8192);
                 var frames = ReadNumber(fps, "FPS", 1, 240);
-                var mbps = ReadNumber(bitRate, "Qualität", 1, 200);
+                var mbps = ReadNumber(bitRate, "Quality", 1, 200);
                 var sound = audio.IsChecked == true;
                 if (sound) await RequireAndroid(device, keepAudioOnDevice ? 33 : 30,
-                    keepAudioOnDevice ? "Audioaufnahme mit Wiedergabe am Gerät" : "Audioaufnahme");
-                if (ChooseMediaFile("Bildschirmaufnahme speichern", "MP4-Video (*.mp4)|*.mp4", "Anzeige", "mp4") is not { } destination) return;
-                BeginStudio(device, "Bildschirmaufnahme", RecordingOptions(edge, frames, mbps, sound, keepAudioOnDevice), destination);
+                    keepAudioOnDevice ? "Audio recording with playback on the device" : "Audio recording");
+                if (ChooseMediaFile("Save screen recording", "MP4 video (*.mp4)|*.mp4", "Display", "mp4") is not { } destination) return;
+                BeginStudio(device, "Screen recording", RecordingOptions(edge, frames, mbps, sound, keepAudioOnDevice), destination);
             }, true));
     }
 
@@ -133,22 +133,22 @@ internal sealed partial class Dashboard
 
     private FrameworkElement BuildCameraPanel()
     {
-        var front = UiCheck("Frontkamera");
-        var dimensions = UiField("Kameraauflösung", "", 162);
-        var fps = UiField("Kamera-FPS", "30", 110);
-        var microphone = UiCheck("Mikrofon im Kameravideo aufnehmen");
-        var available = UiEditor("Unterstützte Kameras und Auflösungen", 140, readOnly: true);
+        var front = UiCheck("Front camera");
+        var dimensions = UiField("Camera resolution", "", 162);
+        var fps = UiField("Camera FPS", "30", 110);
+        var microphone = UiCheck("Record microphone audio with camera video");
+        var available = UiEditor("Supported cameras and resolutions", 140, readOnly: true);
         available.Visibility = Visibility.Collapsed;
 
         string[] Options(bool recordSound)
         {
             var size = dimensions.Text.Trim().ToLowerInvariant().Replace('×', 'x');
             if (size.Length > 0 && !Regex.IsMatch(size, @"^[1-9]\d{1,4}x[1-9]\d{1,4}$"))
-                throw new ArgumentException("Gib die Kameraauflösung als Breite x Höhe ohne Leerzeichen ein, zum Beispiel 1920x1080.");
+                throw new ArgumentException("Enter the camera resolution as width x height without spaces, for example 1920x1080.");
             var result = new List<string>
             {
                 "--video-source=camera", front.IsChecked == true ? "--camera-facing=front" : "--camera-facing=back",
-                $"--camera-fps={ReadNumber(fps, "Kamera-FPS", 1, 240)}"
+                $"--camera-fps={ReadNumber(fps, "Camera FPS", 1, 240)}"
             };
             if (size.Length > 0) result.Add($"--camera-size={size}");
             result.AddRange(recordSound ? ["--audio-source=mic", "--no-audio-playback", "--audio-codec=aac", "--require-audio"] : ["--no-audio"]);
@@ -158,78 +158,78 @@ internal sealed partial class Dashboard
         async Task Preview(bool switchCamera)
         {
             var device = RequireDevice();
-            await RequireAndroid(device, 31, "Kameraübertragung");
+            await RequireAndroid(device, 31, "Camera streaming");
             if (switchCamera) front.IsChecked = front.IsChecked != true;
             var options = Options(false);
             await StopCameraAsync(device);
-            BeginStudio(device, "Kamera live", options);
+            BeginStudio(device, "Live camera", options);
         }
-        return UiCard(UiText("Kamera am PC", true), UiRow(front, microphone),
-            UiRow(Labeled("Auflösung WxH (leer = automatisch)", dimensions), Labeled("Kamera-FPS", fps)),
-            UiRow(UiAction("Live öffnen", () => Preview(false), true), UiAction("Kamera wechseln", () => Preview(true)),
-                UiAction("Unterstützte Größen", async () =>
+        return UiCard(UiText("Camera preview", true), UiRow(front, microphone),
+            UiRow(Labeled("Resolution W×H (blank for automatic)", dimensions), Labeled("Camera FPS", fps)),
+            UiRow(UiAction("Open live preview", () => Preview(false), true), UiAction("Switch camera", () => Preview(true)),
+                UiAction("Supported sizes", async () =>
                 {
                     var device = RequireDevice();
-                    await RequireAndroid(device, 31, "Kameraübertragung");
+                    await RequireAndroid(device, 31, "Camera streaming");
                     using var probe = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
                     probe.CancelAfter(TimeSpan.FromSeconds(25));
                     var selected = front.IsChecked == true ? "front" : "back";
-                    var result = await tools.RunScrcpyAsync(device, "EzAdb Kameragrößen",
+                    var result = await tools.RunScrcpyAsync(device, "EzAdb Camera Sizes",
                         ["--video-source=camera", $"--camera-facing={selected}", "--list-camera-sizes"], probe.Token);
                     result.RequireSuccess();
                     available.Text = result.Details;
                     available.Visibility = Visibility.Visible;
                 })), available,
-            UiRow(UiAction("Kameravideo starten", async () =>
+            UiRow(UiAction("Start camera recording", async () =>
                 {
                     var device = RequireDevice();
-                    await RequireAndroid(device, 31, "Kameravideo");
+                    await RequireAndroid(device, 31, "Camera video");
                     var options = Options(microphone.IsChecked == true);
-                    if (ChooseMediaFile("Kameravideo speichern", "MP4-Video (*.mp4)|*.mp4", "Kamera", "mp4") is not { } destination) return;
+                    if (ChooseMediaFile("Save camera video", "MP4 video (*.mp4)|*.mp4", "Camera", "mp4") is not { } destination) return;
                     await StopCameraAsync(device);
-                    BeginStudio(device, "Kameravideo", options, destination);
+                    BeginStudio(device, "Camera video", options, destination);
                 }),
-                UiAction("Foto speichern", async () =>
+                UiAction("Save photo", async () =>
                 {
                     var device = RequireDevice();
-                    await RequireAndroid(device, 31, "Kamerafoto");
+                    await RequireAndroid(device, 31, "Camera photo");
                     var ffmpeg = AdbTools.FindFfmpeg() ?? throw new InvalidOperationException(
-                        "Kamerafotos benötigen FFmpeg. EzAdb sucht ffmpeg.exe im Tools-Ordner und im Windows-PATH.");
+                        "Camera photos require FFmpeg. EzAdb looks for ffmpeg.exe in the tools folder and on Windows PATH.");
                     var options = Options(false);
-                    if (ChooseMediaFile("Kamerafoto speichern", "PNG-Bild (*.png)|*.png", "Foto", "png") is not { } destination) return;
-                    var resumePreview = studioSessions.Any(session => session.Device.Serial == device.Serial && session.Kind == "Kamera live");
+                    if (ChooseMediaFile("Save camera photo", "PNG image (*.png)|*.png", "Photo", "png") is not { } destination) return;
+                    var resumePreview = studioSessions.Any(session => session.Device.Serial == device.Serial && session.Kind == "Live camera");
                     await StopCameraAsync(device);
-                    var temporary = Path.Combine(Path.GetTempPath(), $"EzAdb-Kamera-{Guid.NewGuid():N}.mp4");
+                    var temporary = Path.Combine(Path.GetTempPath(), $"EzAdb-Camera-{Guid.NewGuid():N}.mp4");
                     var png = Path.Combine(Path.GetDirectoryName(destination)!, $".EzAdb-{Guid.NewGuid():N}.png");
                     try
                     {
                         using var photo = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
                         photo.CancelAfter(TimeSpan.FromSeconds(30));
-                        var capture = await tools.RunScrcpyAsync(device, "EzAdb Kamerafoto",
+                        var capture = await tools.RunScrcpyAsync(device, "EzAdb Camera Photo",
                             [..options, "--time-limit=2", $"--record={temporary}"], photo.Token);
                         capture.RequireSuccess();
-                        if (!IsFinalizedMp4(temporary)) throw new IOException("Von der Kamera wurde kein gültiger Videoframe geliefert.");
+                        if (!IsFinalizedMp4(temporary)) throw new IOException("The camera did not return a valid video frame.");
                         (await AdbTools.ExtractFrameAsync(ffmpeg, temporary, png, photo.Token)).RequireSuccess();
                         File.Move(png, destination, overwrite: true);
-                        Notify($"Kamerafoto gespeichert: {destination}");
+                        Notify($"Camera photo saved: {destination}");
                     }
                     finally
                     {
                         File.Delete(temporary);
                         File.Delete(png);
                         if (resumePreview && !lifetime.IsCancellationRequested)
-                            BeginStudio(device, "Kamera live", options);
+                            BeginStudio(device, "Live camera", options);
                     }
                 })),
-            UiText("Kameraübertragung benötigt Android 12 oder neuer. Beim Wechsel der Kamera oder Aufnahmemethode wird die Vorschau neu geöffnet."));
+            UiText("Camera streaming requires Android 12 or later. Switching cameras or capture modes reopens the preview."));
     }
 
     private FrameworkElement BuildDisplayPanel(out Action<Device?> deviceChanged)
     {
-        var width = UiField("Breite", "1280", 110);
-        var height = UiField("Höhe", "800", 110);
-        var dpi = UiField("Dichte", "240", 110);
-        var appLabel = UiText("Keine App ausgewählt.");
+        var width = UiField("Width", "1280", 110);
+        var height = UiField("Height", "800", 110);
+        var dpi = UiField("Density", "240", 110);
+        var appLabel = UiText("No app selected.");
         Device? target = null;
         LaunchableApp? choice = null;
         bool withoutApp = false;
@@ -240,7 +240,7 @@ internal sealed partial class Dashboard
                 target = device;
                 choice = null;
                 withoutApp = false;
-                appLabel.Text = "Keine App ausgewählt.";
+                appLabel.Text = "No app selected.";
             }
         };
         bool SelectApp(Device device)
@@ -251,41 +251,41 @@ internal sealed partial class Dashboard
             appLabel.Text = app.Name;
             return true;
         }
-        return UiCard(UiText("Separates Android-Display", true),
-            UiRow(Labeled("Breite (px)", width), Labeled("Höhe (px)", height), Labeled("Dichte (dpi)", dpi)),
-            UiText("App beim Start", true), appLabel,
-            UiRow(UiAction("App auswählen", () =>
+        return UiCard(UiText("Separate Android display", true),
+            UiRow(Labeled("Width (px)", width), Labeled("Height (px)", height), Labeled("Density (dpi)", dpi)),
+            UiText("App to open on launch", true), appLabel,
+            UiRow(UiAction("Choose app", () =>
             {
                 SelectApp(RequireDevice());
                 return Task.CompletedTask;
             }),
-            UiAction("Ohne App", () =>
+            UiAction("Without an app", () =>
             {
                 choice = null;
                 withoutApp = true;
-                appLabel.Text = "Das Display wird ohne App geöffnet.";
+                appLabel.Text = "The display will open without an app.";
                 return Task.CompletedTask;
             })),
-            UiAction("Virtuelles Display öffnen", async () =>
+            UiAction("Open virtual display", async () =>
             {
                 var device = RequireDevice();
-                await RequireAndroid(device, 29, "Virtuelle Displays");
-                var dimensions = $"{ReadNumber(width, "Breite", 160, 8192)}x{ReadNumber(height, "Höhe", 160, 8192)}/{ReadNumber(dpi, "Dichte", 72, 1000)}";
+                await RequireAndroid(device, 29, "Virtual displays");
+                var dimensions = $"{ReadNumber(width, "Width", 160, 8192)}x{ReadNumber(height, "Height", 160, 8192)}/{ReadNumber(dpi, "Density", 72, 1000)}";
                 if (!Equals(device, CurrentReadyDevice)) return;
                 if (choice is null && !withoutApp && !SelectApp(device)) return;
                 var package = choice?.Package;
                 string[] options = [$"--new-display={dimensions}", "--no-audio", "--display-ime-policy=local"];
-                BeginStudio(device, "Virtuelles Display", package is null ? options : [..options, $"--start-app={package}"]);
+                BeginStudio(device, "Virtual display", package is null ? options : [..options, $"--start-app={package}"]);
             }, true),
-            UiText("Ab Android 10. Jedes Display erhält ein eigenes Fenster. Welche Apps dort starten dürfen, entscheidet Android."));
+            UiText("Requires Android 10 or later. Each display has its own window. Android determines which apps can open there."));
     }
 
     private async Task RequireAndroid(Device device, int minimum, string feature)
     {
         var output = (await AndroidShell(device, "getprop ro.build.version.sdk")).Trim();
-        if (!int.TryParse(output, out var version)) throw new InvalidOperationException("Die Android-Version konnte nicht gelesen werden.");
+        if (!int.TryParse(output, out var version)) throw new InvalidOperationException("Could not read the Android version.");
         var android = minimum switch { 29 => 10, 30 => 11, 31 => 12, 33 => 13, _ => minimum };
-        if (version < minimum) throw new InvalidOperationException($"{feature} benötigt Android {android} oder neuer (API {minimum}). Das Gerät meldet API {version}.");
+        if (version < minimum) throw new InvalidOperationException($"{feature} requires Android {android} or later (API {minimum}). The device reports API {version}.");
     }
 
     private string? ChooseMediaFile(string title, string filter, string prefix, string extension)
@@ -301,8 +301,8 @@ internal sealed partial class Dashboard
     private void BeginStudio(Device device, string kind, string[] options, string? destination = null)
     {
         if (closingStudio || lifetime.IsCancellationRequested) return;
-        if (kind != "Virtuelles Display" && studioSessions.Any(session => session.Device.Serial == device.Serial && session.Kind == kind))
-            throw new InvalidOperationException($"Auf {device.DisplayName} läuft diese Sitzung bereits.");
+        if (kind != "Virtual display" && studioSessions.Any(session => session.Device.Serial == device.Serial && session.Kind == kind))
+            throw new InvalidOperationException($"{device.DisplayName} already has this session running.");
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         var session = new StudioSession(device, kind, cancellation);
         studioSessions.Add(session);
@@ -327,7 +327,7 @@ internal sealed partial class Dashboard
                 if (line.Contains("ERROR", StringComparison.OrdinalIgnoreCase)) Log(line);
             });
             var result = await tools.RunScrcpyAsync(session.Device, title, options, token, progress,
-                started: session.Kind == "Virtuelles Display"
+                started: session.Kind == "Virtual display"
                     ? process => session.Macros = TrackMacroSession(process, session.Device, token, () => session.DisplayId)
                     : null);
             result.RequireSuccess();
@@ -345,16 +345,16 @@ internal sealed partial class Dashboard
                     if (IsFinalizedMp4(scratch))
                     {
                         File.Move(scratch, destination, overwrite: true);
-                        Notify($"Aufnahme gespeichert: {destination}");
+                        Notify($"Recording saved: {destination}");
                     }
                     else if (File.Exists(scratch))
                     {
-                        Notify($"MP4 unvollständig. Die Rohdatei liegt unter {scratch}.", true);
+                        Notify($"The MP4 is incomplete. The raw file is at {scratch}.", true);
                     }
                 }
                 catch (Exception error) when (error is IOException or UnauthorizedAccessException)
                 {
-                    ReportFailure($"Aufnahme bleibt unter {scratch}", error);
+                    ReportFailure($"Recording remains at {scratch}", error);
                 }
             }
             studioSessions.Remove(session);
@@ -368,7 +368,7 @@ internal sealed partial class Dashboard
     private async Task StopCameraAsync(Device device)
     {
         var existing = studioSessions.Where(session => session.Device.Serial == device.Serial &&
-            session.Kind is "Kamera live" or "Kameravideo").ToArray();
+            session.Kind is "Live camera" or "Camera video").ToArray();
         foreach (var session in existing) session.Cancellation.Cancel();
         await Task.WhenAll(existing.Select(session => session.Completion));
     }

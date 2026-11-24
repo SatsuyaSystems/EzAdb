@@ -12,8 +12,8 @@ internal sealed partial class Dashboard
         Func<int?, Task<Size>>? ReadSize)
     {
         public Window? Controls { get; set; }
-        public override string ToString() => VirtualDisplay is null ? $"{Device.ConnectedName} · Live-Steuerung" :
-            $"{Device.ConnectedName} · Virtuelles Display {VirtualDisplay()?.ToString() ?? "(startet)"}";
+        public override string ToString() => VirtualDisplay is null ? $"{Device.ConnectedName} · Screen control" :
+            $"{Device.ConnectedName} · Virtual display {VirtualDisplay()?.ToString() ?? "(starting)"}";
     }
 
     private readonly List<MacroSession> macroSessions = [];
@@ -38,7 +38,7 @@ internal sealed partial class Dashboard
         var active = macroSessions.Where(session => !session.Token.IsCancellationRequested).ToArray();
         if (active.Length == 0)
         {
-            Notify("Starte zuerst die Live-Steuerung oder ein virtuelles Display.", true);
+            Notify("Start live control or open a virtual display first.", true);
             return;
         }
         if (active is [var session])
@@ -47,12 +47,12 @@ internal sealed partial class Dashboard
             return;
         }
 
-        var list = UiList("Aktive Bildschirmfenster", 135);
+        var list = UiList("Active screen windows", 135);
         list.ItemsSource = active;
         list.SelectedIndex = Math.Max(0, Array.FindIndex(active, item => item.Device.Serial == Selected?.Serial));
-        var open = new Button { Content = "Makro-Steuerung öffnen", IsDefault = true, Style = (Style)FindResource("Primary") };
-        var cancel = new Button { Content = "Abbrechen", IsCancel = true, Style = (Style)FindResource("Action") };
-        var dialog = CreateToolDialog(this, "Bildschirmfenster auswählen", 495, UiStack(list, UiRow(open, cancel)));
+        var open = new Button { Content = "Open macro controls", IsDefault = true, Style = (Style)FindResource("Primary") };
+        var cancel = new Button { Content = "Cancel", IsCancel = true, Style = (Style)FindResource("Action") };
+        var dialog = CreateToolDialog(this, "Choose a screen window", 495, UiStack(list, UiRow(open, cancel)));
         open.Click += (_, _) => { if (list.SelectedItem is MacroSession) dialog.DialogResult = true; };
         if (dialog.ShowDialog() == true && list.SelectedItem is MacroSession picked) ShowMacroControls(picked);
     }
@@ -71,20 +71,20 @@ internal sealed partial class Dashboard
         }
 
         var content = UiStack();
-        var window = CreateToolDialog(this, "EzAdb · Makro-Steuerung", 425, content);
+        var window = CreateToolDialog(this, "EzAdb · Macro Controls", 425, content);
         var device = targetSession.Device;
         var session = targetSession.Token;
         var virtualDisplay = targetSession.VirtualDisplay;
         var target = UiText(targetSession.ToString());
         var status = UiText("");
-        var saved = UiList("Gespeicherte Makros", 96);
+        var saved = UiList("Saved macros", 96);
         CancellationTokenSource? running = null;
         bool editingPoints = false;
         bool closed = false;
         ScrcpyOverlay? pointOverlay = null;
 
         int? Display() => virtualDisplay is null ? null : virtualDisplay() ??
-            throw new InvalidOperationException("Das virtuelle Display wird noch initialisiert.");
+            throw new InvalidOperationException("The virtual display is still starting.");
 
         Button RunHere(string label, Func<Task> action, bool primary = false) => UiAction(label, async () =>
         {
@@ -97,12 +97,12 @@ internal sealed partial class Dashboard
             }
         }, primary);
 
-        var stop = RunHere("Stoppen", () => { running?.Cancel(); return Task.CompletedTask; });
+        var stop = RunHere("Stop", () => { running?.Cancel(); return Task.CompletedTask; });
         stop.IsEnabled = false;
-        var run = RunHere("Ausführen", async () =>
+        var run = RunHere("Run", async () =>
         {
             if (running is not null || editingPoints) return;
-            if (saved.SelectedItem is not string name) throw new InvalidOperationException("Wähle zuerst ein Makro aus.");
+            if (saved.SelectedItem is not string name) throw new InvalidOperationException("Select a macro first.");
             var steps = ParseMacro(File.ReadAllText(MacroPath(name)), Display());
             using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(session);
             running = cancellation;
@@ -113,7 +113,7 @@ internal sealed partial class Dashboard
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
             {
-                status.Text = "Makro gestoppt.";
+                status.Text = "Macro stopped.";
             }
             finally { running = null; stop.IsEnabled = false; }
         }, true);
@@ -126,9 +126,9 @@ internal sealed partial class Dashboard
         };
 
         var library = UiStack(saved);
-        var edit = RunHere("Bearbeiten", async () =>
+        var edit = RunHere("Edit", async () =>
         {
-            if (saved.SelectedItem is not string name) throw new InvalidOperationException("Wähle ein Makro aus.");
+            if (saved.SelectedItem is not string name) throw new InvalidOperationException("Choose a macro.");
             var lines = File.ReadAllLines(MacroPath(name));
             if (lines.Length > 0 && PointMacroSize(lines[0]) is { } size &&
                 lines.Skip(1).Where(line => !string.IsNullOrWhiteSpace(line)).All(line => line.StartsWith("point ", StringComparison.Ordinal)))
@@ -136,13 +136,13 @@ internal sealed partial class Dashboard
                     .Select(line => ClickPoint.Parse(line[6..], size)).ToList());
             else if (EditOverlayMacro(window, device, name) is { } updated) Reload(updated);
         });
-        var newMacro = RunHere("Neues Makro", () =>
+        var newMacro = RunHere("New macro", () =>
         {
             if (EditOverlayMacro(window, device, null) is { } name) Reload(name);
             return Task.CompletedTask;
         });
         library.Children.Add(UiRow(run, stop, edit));
-        var pointEditor = RunHere("Klickpunkte setzen", () => OpenPoints(null, null, []), true);
+        var pointEditor = RunHere("Set click points", () => OpenPoints(null, null, []), true);
         content.Children.Add(target);
         content.Children.Add(UiRow(pointEditor, newMacro));
         content.Children.Add(library);
@@ -150,7 +150,7 @@ internal sealed partial class Dashboard
         async Task OpenPoints(string? name, Size? expected, List<ClickPoint> points)
         {
             if (editingPoints) return;
-            if (running is not null) throw new InvalidOperationException("Stoppe zuerst das laufende Makro.");
+            if (running is not null) throw new InvalidOperationException("Stop the running macro first.");
             editingPoints = true;
             try
             {
@@ -158,7 +158,7 @@ internal sealed partial class Dashboard
                 var size = await (targetSession.ReadSize?.Invoke(display) ?? ReadPointDisplay(device, display, session));
                 if (closed || session.IsCancellationRequested) return;
                 if (expected.HasValue && expected != size)
-                    throw new InvalidOperationException($"Diese Klickfolge wurde für {expected.Value.Width} × {expected.Value.Height} angelegt.");
+                    throw new InvalidOperationException($"This click sequence was created for {expected.Value.Width} × {expected.Value.Height} created.");
                 var result = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
                 pointOverlay = new ScrcpyOverlay(targetSession.Process, editor => BuildClickPointEditor(editor, size, name, points, selected =>
                 {
@@ -187,20 +187,20 @@ internal sealed partial class Dashboard
             if (saved.SelectedIndex < 0 && names.Length > 0) saved.SelectedIndex = 0;
             var hasMacros = names.Length > 0;
             library.Visibility = Visible(hasMacros);
-            if (!hasMacros) status.Text = "Noch keine gespeicherten Makros.";
+            if (!hasMacros) status.Text = "No saved macros yet.";
             else if (running is null) status.Text = "";
             target.Text = targetSession.ToString();
         }
         if (virtualDisplay is not null)
         {
-            content.Children.Add(RunHere("App auf diesem Display öffnen", async () =>
+            content.Children.Add(RunHere("Open an app on this display", async () =>
             {
                 var id = Display()!.Value;
                 if (PickAndroidApp(device, window) is { } app)
                 {
                     session.ThrowIfCancellationRequested();
                     await AndroidShell(device, Launch(app.Package, id), session);
-                    status.Text = $"{app.Name} geöffnet.";
+                    status.Text = $"{app.Name} opened.";
                 }
             }));
         }
@@ -212,23 +212,23 @@ internal sealed partial class Dashboard
 
     private string? EditOverlayMacro(Window owner, Device device, string? existingName)
     {
-        var name = UiField("Makroname", existingName ?? "");
-        var editor = UiEditor("Ablauf", 167);
+        var name = UiField("Macro name", existingName ?? "");
+        var editor = UiEditor("Sequence", 167);
         if (existingName is not null) editor.Text = File.ReadAllText(MacroPath(existingName));
         var status = UiText("");
         var pendingLabel = UiText("");
-        var pendingValue = UiField("Wert für den Makroschritt");
+        var pendingValue = UiField("Value for this macro step");
         string? pendingVerb = null;
         var presets = new WrapPanel();
-        var save = new Button { Content = "Makro speichern", Style = (Style)FindResource("Primary") };
-        var cancel = new Button { Content = "Abbrechen", IsCancel = true, Style = (Style)FindResource("Action"),
+        var save = new Button { Content = "Save macro", Style = (Style)FindResource("Primary") };
+        var cancel = new Button { Content = "Cancel", IsCancel = true, Style = (Style)FindResource("Action"),
             Margin = new Thickness(8, 0, 0, 0) };
-        var add = new Button { Content = "Schritt hinzufügen", Style = (Style)FindResource("Action") };
+        var add = new Button { Content = "Add step", Style = (Style)FindResource("Action") };
         var pending = UiStack(pendingLabel, pendingValue, add);
         pending.Margin = new Thickness(0, 0, 0, 12);
         pending.Visibility = Visibility.Collapsed;
-        var dialog = CreateToolDialog(owner, existingName is null ? "Neues Makro" : $"Makro bearbeiten · {existingName}", 530,
-            UiStack(Labeled("Makroname", name), UiText("Schritt hinzufügen", true), presets, pending, editor, status, UiRow(save, cancel)));
+        var dialog = CreateToolDialog(owner, existingName is null ? "New macro" : $"Edit macro · {existingName}", 530,
+            UiStack(Labeled("Macro name", name), UiText("Add step", true), presets, pending, editor, status, UiRow(save, cancel)));
 
         void AddStep(string line)
         {
@@ -241,9 +241,9 @@ internal sealed partial class Dashboard
         }
         foreach (var (label, verb, instructions, example) in new[]
         {
-            ("Tippen", "tap", "Koordinaten x y", "320 640"), ("Wischen", "swipe", "Start x y, Ziel x y, Dauer in ms", "100 800 100 250 400"),
-            ("Text", "text", "Text für Android", ""), ("Warten", "wait", "Wartezeit in Millisekunden", "1000"),
-            ("Taste", "key", "Android-Taste wie HOME oder BACK", "BACK"), ("ADB", "adb", "Gerätebezogener ADB-Befehl", "shell getprop ro.product.model")
+            ("Tap", "tap", "X Y coordinates", "320 640"), ("Swipe", "swipe", "Start X Y, end X Y, duration in ms", "100 800 100 250 400"),
+            ("Text", "text", "Text for Android", ""), ("Wait", "wait", "Delay in milliseconds", "1000"),
+            ("Key", "key", "Android key such as HOME or BACK", "BACK"), ("ADB", "adb", "Device-specific ADB command", "shell getprop ro.product.model")
         })
         {
             presets.Children.Add(UiAction(label, () =>
@@ -257,7 +257,7 @@ internal sealed partial class Dashboard
                 return Task.CompletedTask;
             }));
         }
-        presets.Children.Add(UiAction("App starten", () =>
+        presets.Children.Add(UiAction("Launch app", () =>
         {
             if (PickAndroidApp(device, dialog) is { } app) AddStep($"app {app.Package}");
             return Task.CompletedTask;
@@ -272,9 +272,9 @@ internal sealed partial class Dashboard
             try
             {
                 var label = name.Text.Trim();
-                if (label.Length == 0) throw new ArgumentException("Gib dem Makro einen Namen.");
+                if (label.Length == 0) throw new ArgumentException("Enter a name for this macro.");
                 if (!label.Equals(existingName, StringComparison.OrdinalIgnoreCase) && File.Exists(MacroPath(label)) &&
-                    MessageBox.Show(dialog, $"Makro „{label}“ überschreiben?", "Makro speichern",
+                    MessageBox.Show(dialog, $"Overwrite the macro “{label}”?", "Save macro",
                         MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
                 SaveMacro(label, editor.Text);
                 dialog.DialogResult = true;

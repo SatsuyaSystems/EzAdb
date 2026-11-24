@@ -12,7 +12,7 @@ internal sealed partial class Dashboard
     internal sealed record WifiRow(string Address, string Name, string Status, bool Connected, bool CanToggle, bool CanRemove)
     {
         public string Detail => $"{Address} · {Status}";
-        public string Action => Connected ? "Trennen" : "Verbinden";
+        public string Action => Connected ? "Disconnect" : "Connect";
     }
 
     private const string TlsConnectSuffix = "._adb-tls-connect._tcp";
@@ -31,7 +31,7 @@ internal sealed partial class Dashboard
                         profile.Name is not null && AdbTools.IsWifiAddress(profile.Address) && AdbTools.IsWifiAddress(profile.Serial))
                     .DistinctBy(profile => AdbTools.NormalizeWifiAddress(profile.Address), StringComparer.OrdinalIgnoreCase).ToArray();
             }
-            catch (JsonException) { Log("Gespeicherte WLAN-Geräte konnten nicht gelesen werden."); }
+            catch (JsonException) { Log("Could not read saved Wi-Fi devices."); }
         }
         RenderWifiProfiles();
     }
@@ -66,8 +66,8 @@ internal sealed partial class Dashboard
             .ThenBy(profile => profile.Address, StringComparer.OrdinalIgnoreCase).Select(profile =>
             {
                 var transport = FindWifiTransport(profile);
-                return new WifiRow(profile.Address, profile.Name.Length == 0 ? "WLAN-Gerät" : profile.Name,
-                    transport?.StatusLabel ?? "Getrennt", transport is not null, enabled && adbIssue is null && tools.Adb is not null, enabled);
+                return new WifiRow(profile.Address, profile.Name.Length == 0 ? "Wi-Fi device" : profile.Name,
+                    transport?.StatusLabel ?? "Disconnected", transport is not null, enabled && adbIssue is null && tools.Adb is not null, enabled);
             }).ToArray();
         if (!shownWifiProfiles.SequenceEqual(rows))
         {
@@ -86,7 +86,7 @@ internal sealed partial class Dashboard
             try { SaveSetting(WifiProfilesFile, JsonSerializer.Serialize(wifiProfiles)); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
-                Notify("Die WLAN-Geräteliste konnte nur für diese Sitzung gespeichert werden.", true, error.Message);
+                Notify("The Wi-Fi device list could only be saved for this session.", true, error.Message);
             }
         }
         RenderWifiProfiles();
@@ -166,8 +166,8 @@ internal sealed partial class Dashboard
 
     private async Task ConnectSavedWifiAsync(string address)
     {
-        if (!AdbTools.IsWifiAddress(address)) throw new InvalidOperationException("Die WLAN-Adresse ist ungültig.");
-        Notify($"Verbinde mit {address} …");
+        if (!AdbTools.IsWifiAddress(address)) throw new InvalidOperationException("The Wi-Fi address is invalid.");
+        Notify($"Connecting to {address} …");
         var result = await tools.RunAdbAsync(["connect", address], lifetime.Token, 25);
         var serial = ConnectedWifiAddress(result.Output);
         if (serial is null && !AdbTools.IsEndpoint(address))
@@ -191,11 +191,11 @@ internal sealed partial class Dashboard
         {
             Devices.SelectedIndex = deviceIndex;
             var device = knownDevices[deviceIndex];
-            Notify($"{device.DisplayName}: {device.StatusLabel} · WLAN", !device.Ready);
+            Notify($"{device.DisplayName}: {device.StatusLabel} · Wi-Fi", !device.Ready);
         }
         else
         {
-            Notify($"WLAN-Adresse gespeichert: {address}");
+            Notify($"Saved Wi-Fi address: {address}");
         }
     }
 
@@ -205,7 +205,7 @@ internal sealed partial class Dashboard
             Array.Find(wifiProfiles, profile => SameWifiAddress(profile.Address, row.Address)) is not { } selected)
             return;
         var connected = FindWifiTransport(selected);
-        await RunActionAsync(connected is null ? "WLAN verbinden" : "WLAN trennen", async () =>
+        await RunActionAsync(connected is null ? "Connect via Wi-Fi" : "Disconnect Wi-Fi", async () =>
         {
             if (connected is null)
             {
@@ -215,7 +215,7 @@ internal sealed partial class Dashboard
             var result = await tools.RunAdbAsync(["disconnect", connected.Serial], lifetime.Token, 20);
             result.RequireSuccess(output => output.StartsWith("disconnected ", StringComparison.Ordinal));
             await RefreshAsync();
-            Notify($"{connected.DisplayName}: WLAN-Verbindung getrennt.");
+            Notify($"{connected.DisplayName}: Wi-Fi disconnected.");
         });
     }
 

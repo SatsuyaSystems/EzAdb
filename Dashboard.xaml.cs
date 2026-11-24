@@ -71,7 +71,7 @@ internal sealed partial class Dashboard : Window
         StateChanged += (_, _) =>
         {
             var maximized = WindowState == WindowState.Maximized;
-            MaximizeButton.ToolTip = maximized ? "Wiederherstellen" : "Maximieren";
+            MaximizeButton.ToolTip = maximized ? "Restore" : "Maximize";
             System.Windows.Automation.AutomationProperties.SetName(MaximizeButton, (string)MaximizeButton.ToolTip);
             MaximizeIcon.Data = Geometry.Parse(maximized ? "M 4,1 H 12 V 9 M 1,4 H 9 V 12 H 1 Z" : "M 1,1 H 11 V 11 H 1 Z");
         };
@@ -117,11 +117,11 @@ internal sealed partial class Dashboard : Window
         var toolPage = ShowDevicePage(nav);
         (PageTitle.Text, PageDescription.Text) = toolPage ?? (nav switch
         {
-            nameof(WifiNav) => ("WLAN-Verbindung", "Kopple dein Android-Gerät und verwende ADB kabellos."),
-            nameof(ApkNav) => ("APK-Installer", "Installiere Android-Apps auf dem ausgewählten Gerät."),
-            nameof(ScreenNav) => ("Bildschirm", "Steuere dein Android-Gerät am PC oder erstelle einen Screenshot."),
-            nameof(ActivityNav) => ("Aktivität", "Sieh nach, welche Aktionen ausgeführt wurden."),
-            _ => ("Geräte", "Verbinde und verwalte deine Android-Geräte.")
+            nameof(WifiNav) => ("Wi-Fi connection", "Pair your Android device to use ADB wirelessly."),
+            nameof(ApkNav) => ("APK installer", "Install Android apps on the selected device."),
+            nameof(ScreenNav) => ("Screen", "Control Android from your PC or take a screenshot."),
+            nameof(ActivityNav) => ("Activity", "Review the actions EzAdb has performed."),
+            _ => ("Devices", "Connect and manage your Android devices.")
         });
     }
 
@@ -184,7 +184,7 @@ internal sealed partial class Dashboard : Window
         var inMirror = ready && mirrors.ContainsKey(selected!.Serial);
         InstallButton.IsEnabled = ScreenshotButton.IsEnabled = ready && !busy;
         MirrorButton.IsEnabled = !busy && (scrcpyIssue is not null || ready && !inMirror);
-        MirrorButton.Content = scrcpyIssue is not null ? "scrcpy einrichten" : inMirror ? "Steuerung läuft" : "Bildschirm steuern";
+        MirrorButton.Content = scrcpyIssue is not null ? "Set up scrcpy" : inMirror ? "Control running" : "Control screen";
         PairButton.IsEnabled = ConnectButton.IsEnabled = QrButton.IsEnabled = !busy && !checkingTools && adbIssue is null;
         ReloadButton.IsEnabled = !busy && adbIssue is null;
         Devices.IsEnabled = knownDevices.Length > 0;
@@ -193,23 +193,23 @@ internal sealed partial class Dashboard : Window
 
         var (title, status, description, fg, bg) = (adbIssue, refreshError, selected?.State) switch
         {
-            (not null, _, _) => ("ADB einrichten", "Einrichtung nötig", "Öffne „Tools verwalten“, um ADB einzurichten.", "Amber", "AmberSoft"),
-            (_, not null, _) => ("ADB antwortet nicht", "Verbindung prüfen", "Details zum letzten Fehler findest du unter Aktivität.", "Amber", "AmberSoft"),
-            (_, _, "device") => (selected!.DisplayName, $"Verbunden · {selected.ConnectionLabel}",
-                "Wähle links, was du mit deinem Gerät machen möchtest.", "Green", "SuccessSoft"),
-            (_, _, "unauthorized") => (selected!.DisplayName, "Freigabe fehlt", "Bestätige die Debugging-Anfrage auf deinem Android-Gerät.", "Amber", "AmberSoft"),
-            (_, _, "offline") => (selected!.DisplayName, "Offline", "Stelle die USB- oder WLAN-Verbindung erneut her.", "Amber", "AmberSoft"),
-            (_, _, not null) => (selected!.DisplayName, selected.StatusLabel, "Prüfe den Status auf deinem Gerät.", "Amber", "AmberSoft"),
-            _ when knownDevices.Length > 0 => ("Gerät auswählen", "Geräte erkannt", "Wähle aus, welches Gerät du verwenden möchtest.", "Accent", "AccentSoft"),
-            _ => ("Kein Gerät verbunden", "Bereit zum Verbinden", "Schließe dein Android-Gerät per USB an oder richte WLAN-Debugging ein.", "Accent", "AccentSoft")
+            (not null, _, _) => ("Set up ADB", "Setup required", "Open “Manage tools” to set up ADB.", "Amber", "AmberSoft"),
+            (_, not null, _) => ("ADB is not responding", "Check connection", "See Activity for details about the last error.", "Amber", "AmberSoft"),
+            (_, _, "device") => (selected!.DisplayName, $"Connected · {selected.ConnectionLabel}",
+                "Choose a task from the sidebar.", "Green", "SuccessSoft"),
+            (_, _, "unauthorized") => (selected!.DisplayName, "Authorization required", "Approve the debugging request on your Android device.", "Amber", "AmberSoft"),
+            (_, _, "offline") => (selected!.DisplayName, "Offline", "Reconnect the device via USB or Wi-Fi.", "Amber", "AmberSoft"),
+            (_, _, not null) => (selected!.DisplayName, selected.StatusLabel, "Check the status on your device.", "Amber", "AmberSoft"),
+            _ when knownDevices.Length > 0 => ("Choose a device", "Devices found", "Choose the device you want to use.", "Accent", "AccentSoft"),
+            _ => ("No device connected", "Ready to connect", "Connect your Android device via USB or set up wireless debugging.", "Accent", "AccentSoft")
         };
         HeroTitle.Text = title;
         HeroStatus.Text = status;
         HeroDescription.Text = description;
         HeroStatus.Foreground = HeroDot.Fill = Paint(fg);
         HeroBadge.Background = Paint(bg);
-        ApkHint.Text = ready ? $"Zielgerät: {selected!.ConnectedName}" : "Verbinde ein Android-Gerät, um APKs zu installieren.";
-        ScreenHint.Text = ready ? $"Zielgerät: {selected!.ConnectedName}" : "Verbinde ein Android-Gerät, um den Bildschirm zu öffnen.";
+        ApkHint.Text = ready ? $"Target device: {selected!.ConnectedName}" : "Connect an Android device to install APKs.";
+        ScreenHint.Text = ready ? $"Target device: {selected!.ConnectedName}" : "Connect an Android device to open screen control.";
         ToolWarning.Visibility = Visible(MissingTools);
         RenderWifiProfiles();
     }
@@ -248,7 +248,7 @@ internal sealed partial class Dashboard : Window
             if (refreshError != error.Message)
             {
                 refreshError = error.Message;
-                Log($"Geräteliste: {error.Message}");
+                Log($"Device list: {error.Message}");
                 ApplyDevices([]);
                 UpdateState();
             }
@@ -306,7 +306,7 @@ internal sealed partial class Dashboard : Window
 
     private void ReportFailure(string label, Exception error)
     {
-        var line = error.Message.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "Unbekannter Fehler";
+        var line = error.Message.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "Unknown error";
         Notify($"{label}: {line[..Math.Min(line.Length, 200)]}", true, $"{label}: {error.Message}");
     }
 
@@ -338,7 +338,7 @@ internal sealed partial class Dashboard : Window
     private async void OnInstall(object sender, RoutedEventArgs e)
     {
         var device = Selected;
-        var dialog = new OpenFileDialog { Title = "APK-Dateien auswählen", Filter = "Android-Pakete (*.apk)|*.apk", Multiselect = true };
+        var dialog = new OpenFileDialog { Title = "Select APK files", Filter = "Android packages (*.apk)|*.apk", Multiselect = true };
         if (dialog.ShowDialog(this) == true)
         {
             await InstallAsync(device, dialog.FileNames);
@@ -351,18 +351,18 @@ internal sealed partial class Dashboard : Window
         {
             return Task.CompletedTask;
         }
-        return RunActionAsync("APK-Installation", async () =>
+        return RunActionAsync("APK installation", async () =>
         {
             var installed = 0;
             foreach (var path in paths)
             {
                 var file = Path.GetFileName(path);
-                Notify($"Installiere {file} auf {device.DisplayName} …");
+                Notify($"Installing {file} to {device.DisplayName} …");
                 try
                 {
                     if (!IsApk(path))
                     {
-                        throw new FileNotFoundException("APK-Datei nicht gefunden.");
+                        throw new FileNotFoundException("APK file not found.");
                     }
                     var result = await RunOnDeviceAsync(device, ["install", "-r", path], 300);
                     result.RequireSuccess(output => output.Split('\n', StringSplitOptions.TrimEntries).Contains("Success"));
@@ -376,11 +376,11 @@ internal sealed partial class Dashboard : Window
             }
             if (installed == paths.Length)
             {
-                Notify(paths.Length == 1 ? "APK installiert." : $"{installed} APK-Dateien installiert.");
+                Notify(paths.Length == 1 ? "APK installed." : $"{installed} APK files installed.");
             }
             else if (paths.Length > 1)
             {
-                Notify($"{installed} von {paths.Length} APK-Dateien installiert. Details stehen unter Aktivität.", true);
+                Notify($"{installed} of {paths.Length} APK files installed. See Activity for details.", true);
             }
         });
     }
@@ -411,7 +411,7 @@ internal sealed partial class Dashboard : Window
         {
             return;
         }
-        Notify($"Öffne Bildschirmsteuerung für {device.DisplayName} …");
+        Notify($"Opening screen control for {device.DisplayName} …");
         try
         {
             while (!lifetime.IsCancellationRequested)
@@ -426,7 +426,7 @@ internal sealed partial class Dashboard : Window
                         started: process => macros = TrackMacroSession(process, device, session.Token));
                     session.Token.ThrowIfCancellationRequested();
                     result.RequireSuccess();
-                    Notify($"Bildschirmsteuerung für {device.DisplayName} beendet.");
+                    Notify($"Screen control for {device.DisplayName} ended.");
                     break;
                 }
                 catch (OperationCanceledException) when (session.IsCancellationRequested)
@@ -437,7 +437,7 @@ internal sealed partial class Dashboard : Window
             }
         }
         catch (ToolDependencyException error) { ReportDependency(error); }
-        catch (Exception error) { ReportFailure("Bildschirmsteuerung", error); }
+        catch (Exception error) { ReportFailure("Screen control", error); }
         finally
         {
             mirrors.Remove(device.Serial);
@@ -456,10 +456,10 @@ internal sealed partial class Dashboard : Window
         {
             session.Cancel();
         }
-        var message = keepAudioOnDevice ? "Ton bleibt am Android-Gerät." : "Ton wird am PC wiedergegeben.";
+        var message = keepAudioOnDevice ? "Audio stays on Android." : "Audio plays on the PC.";
         if (mirrors.Count > 0)
         {
-            message += " Die Bildschirmsteuerung wird kurz neu geöffnet.";
+            message += " The screen control window will reopen.";
         }
         try
         {
@@ -471,13 +471,13 @@ internal sealed partial class Dashboard : Window
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            Notify($"{message} Die Einstellung konnte nur für diese Sitzung übernommen werden.", true, error.Message);
+            Notify($"{message} This setting applies to the current session only.", true, error.Message);
         }
     }
 
     private void DescribeAudioOutput() => AudioOutputDescription.Text = keepAudioOnDevice
-        ? "Der Ton läuft über Android oder die damit verbundenen Boxen."
-        : "Die Bildschirmsteuerung gibt den Ton am Windows-PC wieder.";
+        ? "Audio plays on Android or through speakers connected to it."
+        : "Screen control plays audio on the Windows PC.";
 
     private async void OnScreenshot(object sender, RoutedEventArgs e)
     {
@@ -487,7 +487,7 @@ internal sealed partial class Dashboard : Window
         }
         var dialog = new SaveFileDialog
         {
-            Filter = "PNG-Bild (*.png)|*.png", DefaultExt = "png",
+            Filter = "PNG image (*.png)|*.png", DefaultExt = "png",
             FileName = $"Android-{DateTime.Now:yyyy-MM-dd-HHmmss}.png"
         };
         if (dialog.ShowDialog(this) == true)
@@ -498,10 +498,10 @@ internal sealed partial class Dashboard : Window
                 result.RequireSuccess();
                 if (!result.Data.AsSpan().StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
                 {
-                    throw new InvalidOperationException("Android hat kein PNG-Bild geliefert.");
+                    throw new InvalidOperationException("Android did not return a PNG image.");
                 }
                 await File.WriteAllBytesAsync(dialog.FileName, result.Data, lifetime.Token);
-                Notify("Screenshot gespeichert.", details: $"Screenshot gespeichert: {dialog.FileName}");
+                Notify("Screenshot saved.", details: $"Screenshot saved: {dialog.FileName}");
             });
         }
     }
@@ -532,26 +532,26 @@ internal sealed partial class Dashboard : Window
         var address = field.Text.Trim();
         if (!AdbTools.IsEndpoint(address))
         {
-            Notify("Gib die Adresse mit Port ein, zum Beispiel 192.168.1.20:37123.", true);
+            Notify("Enter the address and port, for example 192.0.2.20:37123.", true);
             field.Focus();
             return Task.CompletedTask;
         }
         var code = PairCode.Password;
         if (pairing && (code.Length != 6 || !code.All(char.IsAsciiDigit)))
         {
-            Notify("Gib den sechsstelligen Kopplungscode von Android ein.", true);
+            Notify("Enter the six-digit pairing code shown on Android.", true);
             PairCode.Focus();
             return Task.CompletedTask;
         }
 
-        return RunActionAsync(pairing ? "WLAN-Kopplung" : "WLAN-Verbindung", async () =>
+        return RunActionAsync(pairing ? "Wi-Fi pairing" : "Wi-Fi connection", async () =>
         {
             if (pairing)
             {
                 PairCode.Clear();
-                Notify("Kopplung läuft …");
+                Notify("Pairing…");
                 var response = await tools.PairAsync(address, code, lifetime.Token);
-                Notify("Gerät gekoppelt. Falls es nicht erscheint, nutze die Verbindungsadresse aus WLAN-Debugging.");
+                Notify("Device paired. If it does not appear, use the connection address from Wireless debugging.");
                 await RefreshAsync();
                 if (!lifetime.IsCancellationRequested)
                 {
@@ -582,7 +582,7 @@ internal sealed partial class Dashboard : Window
         QrPlate.Visibility = Visibility.Visible;
         RetryQrButton.Visibility = Visibility.Collapsed;
         QrStatus.Foreground = Paint("Accent");
-        QrStatus.Text = "Warte auf den Scan …";
+        QrStatus.Text = "Waiting for the scan…";
         if (!QrOpen)
         {
             previousFocus = Keyboard.FocusedElement;
@@ -633,7 +633,7 @@ internal sealed partial class Dashboard : Window
             }
             QrImage.Source = null;
             QrPlate.Visibility = Visibility.Collapsed;
-            QrStatus.Text = "Gerät gekoppelt. Warte auf die Verbindung …";
+            QrStatus.Text = "Device paired. Waiting for connection…";
             var guid = QrPairing.ReadGuid(output);
             Device? matched = null;
             for (var attempt = 0; attempt < 5; attempt++)
@@ -653,8 +653,8 @@ internal sealed partial class Dashboard : Window
             }
             RememberWifiPairing(output);
             QrStatus.Text = matched is null
-                ? "Gerät gekoppelt. Wenn es nicht erscheint, verwende unten die Verbindungsadresse von Android."
-                : $"Mit {matched.DisplayName} verbunden.";
+                ? "Device paired. If it does not appear, enter the connection address from Android below."
+                : $"With {matched.DisplayName} connected.";
             QrStatus.Foreground = Paint("Green");
             Log(QrStatus.Text);
         }
@@ -662,7 +662,7 @@ internal sealed partial class Dashboard : Window
         {
             if (qrCancellation == session && !lifetime.IsCancellationRequested)
             {
-                QrFailed("Der QR-Code ist abgelaufen. Erstelle einen neuen Code.");
+                QrFailed("The QR code has expired. Generate a new one.");
             }
         }
         catch (ToolDependencyException error)
@@ -676,8 +676,8 @@ internal sealed partial class Dashboard : Window
         {
             if (qrCancellation == session)
             {
-                Log($"QR-Kopplung: {error.Message.Replace(pairing.Password, "[Code]", StringComparison.Ordinal)}");
-                QrFailed("Kopplung fehlgeschlagen. Prüfe, ob beide Geräte im selben Netzwerk sind, oder verwende den Kopplungscode.");
+                Log($"QR pairing: {error.Message.Replace(pairing.Password, "[Code]", StringComparison.Ordinal)}");
+                QrFailed("Pairing failed. Check that both devices are on the same network or use the pairing code.");
             }
         }
         finally
@@ -748,15 +748,15 @@ internal sealed partial class Dashboard : Window
 
     private void RenderTools()
     {
-        ModalTitle.Text = MissingTools ? "Android-Tools fehlen" : "Android-Tools verwalten";
+        ModalTitle.Text = MissingTools ? "Android tools are missing" : "Manage Android tools";
         ModalDescription.Text = MissingTools
-            ? "EzAdb kann ADB, scrcpy und die benötigten Bibliotheken direkt herunterladen und einrichten."
-            : "ADB verbindet deine Geräte. scrcpy öffnet die Bildschirmsteuerung.";
+            ? "EzAdb can download and install ADB, scrcpy, and their dependencies."
+            : "ADB connects your devices. scrcpy lets you view and control their screens.";
         ModalIcon.Background = Paint(MissingTools ? "AmberSoft" : "AccentSoft");
         ModalIconPath.Data = (Geometry)FindResource(MissingTools ? "WarningIcon" : "ToolsIcon");
         ModalIconPath.Stroke = Paint(MissingTools ? "Amber" : "Accent");
-        RenderTool(AdbState, AdbDetail, adbIssue, "USB, WLAN, APKs und Screenshots");
-        RenderTool(ScrcpyState, ScrcpyDetail, scrcpyIssue, "Live-Steuerung mit Maus und Tastatur");
+        RenderTool(AdbState, AdbDetail, adbIssue, "USB, Wi-Fi, APKs, and screenshots");
+        RenderTool(ScrcpyState, ScrcpyDetail, scrcpyIssue, "Live control with mouse and keyboard");
         var locations = GetToolLocations(tools.Adb, tools.Scrcpy);
         ToolLocations.ItemsSource = locations;
         ToolLocations.Visibility = Visible(locations.Length > 0);
@@ -768,9 +768,9 @@ internal sealed partial class Dashboard : Window
         var scrcpyFolder = ToolFolder(scrcpy);
         if (adbFolder is not null && adbFolder.Equals(scrcpyFolder, StringComparison.OrdinalIgnoreCase))
         {
-            return [new("Tool-Ordner", adbFolder)];
+            return [new("Tools folder", adbFolder)];
         }
-        return [..new[] { new ToolLocation("ADB-Ordner", adbFolder ?? ""), new ToolLocation("scrcpy-Ordner", scrcpyFolder ?? "") }
+        return [..new[] { new ToolLocation("ADB folder", adbFolder ?? ""), new ToolLocation("scrcpy folder", scrcpyFolder ?? "") }
             .Where(location => location.Folder.Length > 0)];
     }
 
@@ -792,19 +792,19 @@ internal sealed partial class Dashboard : Window
     {
         if (((Button)sender).DataContext is not ToolLocation location || !Directory.Exists(location.Folder))
         {
-            ShowToolsFeedback("Der Tool-Ordner wurde nicht gefunden.");
+            ShowToolsFeedback("The tools folder was not found.");
             return;
         }
         try { Process.Start(new ProcessStartInfo(location.Folder) { UseShellExecute = true }); }
         catch (Exception error) when (error is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            ShowToolsFeedback($"Der Ordner konnte nicht geöffnet werden: {error.Message}");
+            ShowToolsFeedback($"Could not open folder: {error.Message}");
         }
     }
 
     private void RenderTool(TextBlock status, TextBlock detail, string? issue, string purpose)
     {
-        status.Text = issue is not null ? "Einrichten" : "Bereit";
+        status.Text = issue is not null ? "Set up" : "Ready";
         status.Foreground = Paint(issue is not null ? "Amber" : "Green");
         detail.Text = issue ?? purpose;
     }
@@ -872,7 +872,7 @@ internal sealed partial class Dashboard : Window
         {
             return;
         }
-        var dialog = new OpenFolderDialog { Title = "Entpackten Ordner mit ADB und scrcpy auswählen" };
+        var dialog = new OpenFolderDialog { Title = "Select the extracted folder containing ADB and scrcpy" };
         if (dialog.ShowDialog(this) != true)
         {
             return;
@@ -880,7 +880,7 @@ internal sealed partial class Dashboard : Window
         var folder = dialog.FolderName;
         await ConfigureToolsAsync(async cancellation =>
             await ToolInstaller.ReadyAsync(folder, cancellation)
-            ?? throw new InvalidOperationException("Wähle den vollständigen Ordner mit adb.exe, scrcpy.exe und den Bibliotheken."));
+            ?? throw new InvalidOperationException("Choose the full folder containing adb.exe, scrcpy.exe, and their libraries."));
     }
 
     private async Task ConfigureToolsAsync(Func<CancellationToken, Task<AdbTools>> configure)
@@ -894,7 +894,7 @@ internal sealed partial class Dashboard : Window
         checkingTools = true;
         UpdateState();
         ToolsProgress.Visibility = Visibility.Visible;
-        ShowToolsFeedback("Einrichtung läuft …", error: false);
+        ShowToolsFeedback("Setting up…", error: false);
         try
         {
             var candidate = await configure(setup.Token);
@@ -907,21 +907,21 @@ internal sealed partial class Dashboard : Window
             try
             {
                 SaveSetting(settingsFile, Path.GetDirectoryName(tools.Adb)!);
-                ShowToolsFeedback("Einrichtung abgeschlossen.", error: false);
-                Log("ADB und scrcpy sind bereit.");
+                ShowToolsFeedback("Setup complete.", error: false);
+                Log("ADB and scrcpy are ready.");
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException)
             {
-                ShowToolsFeedback("Tools sind für diese Sitzung bereit. Der Ordnerpfad konnte nicht gespeichert werden.");
+                ShowToolsFeedback("Tools are ready for this session. Could not save the folder path.");
                 Log(error.Message);
             }
             await RefreshAsync();
         }
         catch (OperationCanceledException) when (setup.IsCancellationRequested) { }
-        catch (OperationCanceledException) { ShowToolsFeedback("Der Download hat zu lange gedauert. Versuche es erneut."); }
+        catch (OperationCanceledException) { ShowToolsFeedback("The download timed out. Try again."); }
         catch (HttpRequestException error)
         {
-            ShowToolsFeedback("Der Download ist fehlgeschlagen. Prüfe die Internetverbindung und versuche es erneut.");
+            ShowToolsFeedback("The download failed. Check your internet connection and try again.");
             Log($"Tools: {error.Message}");
         }
         catch (Exception error) { ShowToolsFeedback(error.Message); }

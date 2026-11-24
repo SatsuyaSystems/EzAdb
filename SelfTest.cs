@@ -37,7 +37,7 @@ internal static class SelfTest
             {
                 return 3;
             }
-            var missingAdb = "adb.exe wurde nicht gefunden.";
+            var missingAdb = "adb.exe was not found.";
             if (incompleteToolsFolder is not null)
             {
                 var issue = new AdbTools(incompleteToolsFolder).CheckAsync(false, CancellationToken.None).GetAwaiter().GetResult();
@@ -76,8 +76,8 @@ internal static class SelfTest
             var settings = Directory.CreateTempSubdirectory("EzAdb-self-test-");
             var dashboard = new Dashboard(discover: false, settingsDirectory: settings.FullName, readFiles: (_, path) => Task.FromResult(path switch
             {
-                "/sdcard" => "d\0DCIM\0d\0Download\0d\0Documents\0d\0Music\0d\0Pictures\0f\0Notizen.txt\0",
-                "/sdcard/Download" => "d\0Projekte\0f\0Foto.jpg\0f\0Anleitung.pdf\0",
+                "/sdcard" => "d\0DCIM\0d\0Download\0d\0Documents\0d\0Music\0d\0Pictures\0f\0Notes.txt\0",
+                "/sdcard/Download" => "d\0Projects\0f\0Photo.jpg\0f\0Guide.pdf\0",
                 "/sdcard/DCIM" => "d\0Camera\0",
                 _ => ""
             })) { ShowInTaskbar = false, Opacity = 0 };
@@ -164,7 +164,7 @@ internal static class SelfTest
                     return 11;
                 }
                 ((RadioButton)dashboard.FindName("OverviewNav")).IsChecked = true;
-                dashboard.ApplyToolIssues(missingAdb, "Eine Bibliothek für scrcpy fehlt.");
+                dashboard.ApplyToolIssues(missingAdb, "A scrcpy dependency is missing.");
                 dashboard.ShowTools();
                 var overlay = (FrameworkElement)dashboard.FindName("ToolsOverlay");
                 var workspace = (FrameworkElement)dashboard.FindName("Workspace");
@@ -214,42 +214,42 @@ internal static class SelfTest
             $"{service}\tdevice model:Pixel_8 transport_id:5\n" +
             "[fe80::1]:5555\tdevice transport_id:6\n" +
             "emulator-5554\tdevice transport_id:7\n");
-        if (connections is not [{ ConnectionLabel: "USB", UsbPath: "1-2" }, { ConnectionLabel: "WLAN" },
-                { ConnectionLabel: "WLAN" }, { ConnectionLabel: "Emulator" }] ||
+        if (connections is not [{ ConnectionLabel: "USB", UsbPath: "1-2" }, { ConnectionLabel: "Wi-Fi" },
+                { ConnectionLabel: "Wi-Fi" }, { ConnectionLabel: "Emulator" }] ||
             usb.ConnectionLabel != "USB" || Dashboard.ConnectedWifiAddress($"already connected to {service}") != service ||
             Dashboard.ConnectedWifiAddress("failed to connect to 192.168.1.5:5555") is not null ||
             Dashboard.FindAdvertisedWifiAddress("adb-pixel-A1B2C3\t_adb-tls-pairing._tcp.\t192.168.1.5:43210\n" +
                 "adb-pixel-A1B2C3\t_adb-tls-connect._tcp.\t192.168.1.5:47321\n", "adb-pixel._adb-tls-connect._tcp") != service)
         {
-            throw new InvalidOperationException("ADB-Verbindungstypen und WLAN-Adressen konnten nicht zugeordnet werden.");
+            throw new InvalidOperationException("Could not match ADB connection types and Wi-Fi addresses.");
         }
         var picker = (ComboBox)dashboard.FindName("Devices");
         dashboard.ApplyDevices([usb, connections[1]]);
         picker.SelectedItem = connections[1];
-        if (((TextBlock)dashboard.FindName("HeroStatus")).Text != "Verbunden · WLAN")
+        if (((TextBlock)dashboard.FindName("HeroStatus")).Text != "Connected · Wi-Fi")
         {
-            throw new InvalidOperationException("Die WLAN-Kennzeichnung fehlt in der Geräteansicht.");
+            throw new InvalidOperationException("The device view is missing the Wi-Fi label.");
         }
         Capture(dashboard, previewFolder, "geraete-verbindungen");
 
         var rows = (ItemsControl)dashboard.FindName("SavedWifiRows");
-        if (rows.Items.Cast<Dashboard.WifiRow>().ToArray() is not [{ Address: service, Connected: true, Action: "Trennen" }])
+        if (rows.Items.Cast<Dashboard.WifiRow>().ToArray() is not [{ Address: service, Connected: true, Action: "Disconnect" }])
         {
-            throw new InvalidOperationException("Die gespeicherte WLAN-Liste zeigt den aktiven Transport nicht.");
+            throw new InvalidOperationException("The saved Wi-Fi list does not show the active transport.");
         }
         ((RadioButton)dashboard.FindName("WifiNav")).IsChecked = true;
         Capture(dashboard, previewFolder, "wlan-gespeichert");
         dashboard.ApplyDevices([usb]);
-        if (rows.Items.Cast<Dashboard.WifiRow>().ToArray() is not [{ Address: service, Connected: false, Action: "Verbinden" }])
+        if (rows.Items.Cast<Dashboard.WifiRow>().ToArray() is not [{ Address: service, Connected: false, Action: "Connect" }])
         {
-            throw new InvalidOperationException("Das WLAN-Gerät bleibt nach dem Trennen nicht gespeichert.");
+            throw new InvalidOperationException("The Wi-Fi device is no longer saved after disconnecting.");
         }
         var reopened = new Dashboard(discover: false, settingsDirectory: settingsDirectory);
         try
         {
             var saved = (ItemsControl)reopened.FindName("SavedWifiRows");
             if (saved.Items.Cast<Dashboard.WifiRow>().ToArray() is not [{ Address: service, Connected: false, Name: "Pixel 8" }])
-                throw new InvalidOperationException("Das gespeicherte WLAN-Gerät fehlt nach dem Neustart.");
+                throw new InvalidOperationException("The saved Wi-Fi device is missing after restart.");
         }
         finally { reopened.Close(); }
         picker.SelectedItem = usb;
@@ -260,55 +260,55 @@ internal static class SelfTest
     {
         static void Require(bool condition, string test)
         {
-            if (!condition) throw new InvalidOperationException($"Gerätefunktionen: {test}");
+            if (!condition) throw new InvalidOperationException($"Device features: {test}");
         }
 
-        Require(DeviceCommands.Quote("/sdcard/Bo'xes") == "'/sdcard/Bo'\\''xes'", "Escaping in Android-Pfaden");
-        Require(DeviceCommands.PathOnDevice("/sdcard//DCIM/../Download/") == "/sdcard/Download", "Pfadnormalisierung");
+        Require(DeviceCommands.Quote("/sdcard/Bo'xes") == "'/sdcard/Bo'\\''xes'", "Escaping Android paths");
+        Require(DeviceCommands.PathOnDevice("/sdcard//DCIM/../Download/") == "/sdcard/Download", "Path normalization");
         var files = DeviceCommands.ParseDirectory("/sdcard", "f\0Ablage mit Leerzeichen.txt\0d\0ÄÖÜ\nOrdner\0");
-        Require(files is [{ IsDirectory: true, Name: "ÄÖÜ\nOrdner" }, { FullPath: "/sdcard/Ablage mit Leerzeichen.txt" }], "Android-Dateiliste");
+        Require(files is [{ IsDirectory: true, Name: "ÄÖÜ\nOrdner" }, { FullPath: "/sdcard/Ablage mit Leerzeichen.txt" }], "Android file list");
         Require(DeviceCommands.ParsePackages("package:org.demo.app\r\npackage:android\nbroken\n")
-            is ["android", "org.demo.app"], "Installierte Pakete");
-        var names = DeviceCommands.ParseAppNames("[server] INFO: List of apps:\n* Einstellungen                com.android.settings\n" +
-            "- Eine App mit einem längeren Anzeigenamen\n                               org.demo.app\n");
-        Require(names.Count == 2 && names["com.android.settings"] == "Einstellungen" &&
-            names["org.demo.app"].EndsWith("Anzeigenamen", StringComparison.Ordinal), "App-Anzeigenamen");
-        Require(DeviceCommands.ParseAdbArguments("adb shell \"echo a b\"", true) is ["shell", "echo a b"], "ADB-Argumente");
-        Require(DeviceCommands.TypeText("a %s\nb").Contains("input text '%'", StringComparison.Ordinal), "Texteingabe mit Prozentzeichen");
-        var steps = Dashboard.ParseMacro("tap 10 20\nswipe 1 2 3 4 350\napp com.android.settings\ntext Hallo\nwait 150\nadb shell id");
+            is ["android", "org.demo.app"], "Installed packages");
+        var names = DeviceCommands.ParseAppNames("[server] INFO: List of apps:\n* Settings                com.android.settings\n" +
+            "- An app with a longer display name\n                               org.demo.app\n");
+        Require(names.Count == 2 && names["com.android.settings"] == "Settings" &&
+            names["org.demo.app"].EndsWith("display name", StringComparison.Ordinal), "App display names");
+        Require(DeviceCommands.ParseAdbArguments("adb shell \"echo a b\"", true) is ["shell", "echo a b"], "ADB arguments");
+        Require(DeviceCommands.TypeText("a %s\nb").Contains("input text '%'", StringComparison.Ordinal), "Text input with a percent sign");
+        var steps = Dashboard.ParseMacro("tap 10 20\nswipe 1 2 3 4 350\napp com.android.settings\ntext Hello\nwait 150\nadb shell id");
         Require(steps.Length == 6 && steps[0].Command is ["shell", "-T", "input tap 10 20"] &&
-            steps[4].WaitMs == 150 && steps[5].Command is ["shell", "id"], "Makro-Schritte");
-        var virtualSteps = Dashboard.ParseMacro("tap 10 20\nswipe 1 2 3 4 350\ntext Hallo\nkey BACK\napp com.android.settings\nadb shell id", 8);
+            steps[4].WaitMs == 150 && steps[5].Command is ["shell", "id"], "Macro steps");
+        var virtualSteps = Dashboard.ParseMacro("tap 10 20\nswipe 1 2 3 4 350\ntext Hello\nkey BACK\napp com.android.settings\nadb shell id", 8);
         Require(virtualSteps.Take(4).All(step => step.Command![2].StartsWith("input -d 8 ", StringComparison.Ordinal)) &&
             virtualSteps[4].Command![2].Contains("--display 8 ", StringComparison.Ordinal) &&
-            virtualSteps[5].Command is ["shell", "id"], "Makros auf virtuellem Display");
+            virtualSteps[5].Command is ["shell", "id"], "Macros on a virtual display");
         var logical = Dashboard.ParsePointDisplay("Display: mDisplayId=0\n init=2400x1080 cur=1080x2400 app=1080x2220\n" +
             "Display: mDisplayId=8 (organized)\n init=800x400 cur=800x400 app=800x370", 8);
         var content = Dashboard.VideoBounds(new Size(600, 600), logical);
         Require(logical == new Size(800, 400) && content == new Rect(0, 150, 600, 300) &&
             Dashboard.AndroidPoint(new Point(300, 300), content, logical) == new Point(400, 200) &&
             Dashboard.AndroidPoint(new Point(20, 149), content, logical) is null &&
-            Dashboard.AndroidPoint(new Point(600, 450), content, logical) is null, "Klickpunkte im Videobild");
+            Dashboard.AndroidPoint(new Point(600, 450), content, logical) is null, "Click points in the video preview");
         var clicks = Dashboard.ParseMacro("# EzAdb-Klickpunkte 800x400\npoint 10 20 125 0 3\npoint 70 90 400 600 2", 8);
         Require(clicks is [{ WaitMs: 125, Repeats: 3, Command: ["shell", "-T", "input -d 8 tap 10 20"] },
             { WaitMs: 400, Repeats: 2, Command: ["shell", "-T", "input -d 8 swipe 70 90 70 90 600"] }] &&
-            clicks[1].PointDisplay == logical && clicks[1].DisplayId == 8, "Klickregeln für das ausgewählte Display");
+            clicks[1].PointDisplay == logical && clicks[1].DisplayId == 8, "Click rules for the selected display");
         var data = Dashboard.ParseHealth("@battery\nlevel: 79\nscale: 100\ntemperature: 325\n@cpu\n 4.2% TOTAL: 1% user\n" +
             "@ram\nMemTotal: 8000 kB\nMemAvailable: 2500 kB\n@storage\nfs 37000 25000 12000 68% /sdcard\n@info\nGoogle\nPixel\n16\n36\narm64-v8a\n");
-        Require(data is { Battery: 79, Temperature: 32.5, Cpu: 4.2, RamUsed: 5500, StorageUsed: 25000 }, "Gerätemonitor");
-        Require(Dashboard.ParseDisplayId("[server] INFO: New display: 1280x800/240 (id=4)") == 4, "Virtuelle Display-ID");
+        Require(data is { Battery: 79, Temperature: 32.5, Cpu: 4.2, RamUsed: 5500, StorageUsed: 25000 }, "Device monitor");
+        Require(Dashboard.ParseDisplayId("[server] INFO: New display: 1280x800/240 (id=4)") == 4, "Virtual display ID");
         Require(Dashboard.RecordingOptions(1920, 30, 8, false, true).Contains("--no-audio") &&
-            Dashboard.RecordingOptions(1920, 30, 8, true, true).Contains("--audio-dup"), "MP4-Aufnahmeoptionen");
+            Dashboard.RecordingOptions(1920, 30, 8, true, true).Contains("--audio-dup"), "MP4 recording options");
 
         if (Environment.GetEnvironmentVariable("EZADB_OFFLINE_VIDEO") is { Length: > 0 } video)
         {
-            Require(Dashboard.IsFinalizedMp4(video), "MP4-Index");
-            var ffmpeg = AdbTools.FindFfmpeg() ?? throw new InvalidOperationException("FFmpeg-Testwerkzeug nicht gefunden.");
+            Require(Dashboard.IsFinalizedMp4(video), "MP4 index");
+            var ffmpeg = AdbTools.FindFfmpeg() ?? throw new InvalidOperationException("FFmpeg test tool was not found.");
             var png = Path.Combine(Path.GetTempPath(), $"EzAdb-Test-{Guid.NewGuid():N}.png");
             try
             {
                 AdbTools.ExtractFrameAsync(ffmpeg, video, png, CancellationToken.None).GetAwaiter().GetResult().RequireSuccess();
-                Require(File.ReadAllBytes(png).AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }), "Kamerafoto-Export");
+                Require(File.ReadAllBytes(png).AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }), "Camera photo export");
             }
             finally { File.Delete(png); }
         }
@@ -331,53 +331,53 @@ internal static class SelfTest
         var filesView = (FrameworkElement)dashboard.DeviceToolPage.Content;
         var files = Children<ListView>(filesView).Single();
         var address = Children<TextBox>(filesView).Single(box =>
-            System.Windows.Automation.AutomationProperties.GetName(box) == "Android-Pfad");
+            System.Windows.Automation.AutomationProperties.GetName(box) == "Android path");
         var filter = Children<TextBox>(filesView).Single(box => box != address);
         void FileAction(string caption) => Click(Children<Button>(filesView).Single(button =>
             Equals(button.Content, caption) || Equals(button.ToolTip, caption)));
         void CheckFolder(string expected, int count)
         {
             if (address.Text != expected || files.Items.Count != count)
-                throw new InvalidOperationException($"Dateimanager zeigt {expected} nicht korrekt.");
+                throw new InvalidOperationException($"File manager displays {expected} incorrectly.");
         }
         CheckFolder("/sdcard", 6);
         FileAction("Downloads");
         CheckFolder("/sdcard/Download", 3);
         filter.Text = ".pdf";
         CheckFolder("/sdcard/Download", 1);
-        FileAction("Zurück (Alt+Links)");
+        FileAction("Back (Alt+Left)");
         CheckFolder("/sdcard", 6);
-        FileAction("Vorwärts (Alt+Rechts)");
+        FileAction("Forward (Alt+Right)");
         CheckFolder("/sdcard/Download", 3);
         FileAction("/sdcard");
         CheckFolder("/sdcard", 6);
-        FileAction("Kamera");
+        FileAction("Camera");
         CheckFolder("/sdcard/DCIM", 1);
-        if (Children<Button>(filesView).Single(button => Equals(button.ToolTip, "Vorwärts (Alt+Rechts)")).IsEnabled)
-            throw new InvalidOperationException("Vorwärtsverlauf wurde nach einer neuen Navigation nicht gelöscht.");
+        if (Children<Button>(filesView).Single(button => Equals(button.ToolTip, "Forward (Alt+Right)")).IsEnabled)
+            throw new InvalidOperationException("Navigating to a new folder did not clear forward history.");
         dashboard.Dispatcher.BeginInvoke(new Action(() =>
         {
             var explorer = dashboard.OwnedWindows.Cast<Window>().Single();
             explorer.Opacity = 0;
             try
             {
-                if (explorer.Title != "Android im Windows-Explorer" ||
-                    !Children<Button>(explorer).Any(button => Equals(button.Content, "Explorer öffnen")))
-                    failure = new InvalidOperationException("Explorer-Einstieg fehlt.");
+                if (explorer.Title != "Android in File Explorer" ||
+                    !Children<Button>(explorer).Any(button => Equals(button.Content, "Open File Explorer")))
+                    failure = new InvalidOperationException("Missing File Explorer entry point.");
             }
             finally { explorer.Close(); }
         }));
-        FileAction("Windows-Explorer");
+        FileAction("File Explorer");
         if (failure is not null) throw failure;
-        FileAction("Interner Speicher");
+        FileAction("Internal storage");
 
         dashboard.ScreenNav.IsChecked = true;
         Click(dashboard.OpenVirtualDisplaysButton);
-        if (!Children<Button>(dashboard.DeviceToolPage).Any(button => Equals(button.Content, "App auswählen")))
-            throw new InvalidOperationException("App-Auswahl über Bildschirmwerkzeuge fehlt.");
+        if (!Children<Button>(dashboard.DeviceToolPage).Any(button => Equals(button.Content, "Choose app")))
+            throw new InvalidOperationException("App picker missing from screen tools.");
         Capture(dashboard, folder, "virtuelle-displays");
 
-        Dashboard.LaunchableApp[] examples = [new("Musik", "org.demo.audio"), new("Kalender", "org.demo.calendar")];
+        Dashboard.LaunchableApp[] examples = [new("Music", "org.demo.audio"), new("Calendar", "org.demo.calendar")];
         var picked = dashboard.PickAndroidApp(device, dashboard, _ =>
         {
             var dialog = dashboard.OwnedWindows.Cast<Window>().Single();
@@ -389,7 +389,7 @@ internal static class SelfTest
                     var search = Children<TextBox>(dialog).Single();
                     var select = Children<Button>(dialog).Single(button => button.IsDefault);
                     search.Text = "unbekannt";
-                    if (select.IsEnabled) throw new InvalidOperationException("Leere App-Auswahl ist aktiv.");
+                    if (select.IsEnabled) throw new InvalidOperationException("An empty app selection was accepted.");
                     search.Text = "MUS";
                     Capture((FrameworkElement)dialog.Content, folder, "app-auswahl");
                     Click(select);
@@ -399,7 +399,7 @@ internal static class SelfTest
             return Task.FromResult(examples);
         });
         if (failure is not null || picked != examples[0])
-            throw new InvalidOperationException("App nach Anzeigenamen auswählen.", failure);
+            throw new InvalidOperationException("Select an app by display name.", failure);
 
         var host = new Window { ShowActivated = false, Opacity = 0, Width = 820, Height = 620, WindowStyle = WindowStyle.None };
         using var process = System.Diagnostics.Process.GetCurrentProcess();
@@ -408,17 +408,17 @@ internal static class SelfTest
         {
             host.Show();
             session = dashboard.TrackMacroSession(process, device, CancellationToken.None, () => 8,
-                id => id == 8 ? Task.FromResult(new Size(800, 400)) : throw new InvalidOperationException("Falsches Display."));
-            if (session.Controls is not null || Application.Current.Windows.Cast<Window>().Any(w => w.Title == "EzAdb Klickpunkte"))
-                throw new InvalidOperationException("Makro-UI erscheint automatisch.");
+                id => id == 8 ? Task.FromResult(new Size(800, 400)) : throw new InvalidOperationException("Wrong display."));
+            if (session.Controls is not null || Application.Current.Windows.Cast<Window>().Any(w => w.Title == "EzAdb Click Points"))
+                throw new InvalidOperationException("Macro UI appeared automatically.");
             dashboard.ScreenNav.IsChecked = true;
             Click(dashboard.MacroControlsButton);
-            var controls = session.Controls ?? throw new InvalidOperationException("Die App öffnet kein Makrofenster.");
+            var controls = session.Controls ?? throw new InvalidOperationException("The app did not open a macro window.");
             controls.Opacity = 0;
-            if (controls.Owner != dashboard) throw new InvalidOperationException("Makrofenster gehört nicht zur App.");
+            if (controls.Owner != dashboard) throw new InvalidOperationException("The macro window is not owned by the app.");
             Click(dashboard.MacroControlsButton);
             if (session.Controls != controls || dashboard.OwnedWindows.Cast<Window>().Count(w => w.Title == controls.Title) != 1)
-                throw new InvalidOperationException("Makrofenster wurde doppelt geöffnet.");
+                throw new InvalidOperationException("The macro window opened twice.");
             var palette = (FrameworkElement)controls.Content;
             Button ByLabel(DependencyObject root, string label) =>
                 Children<Button>(root).Single(button => Equals(button.Content, label));
@@ -430,42 +430,42 @@ internal static class SelfTest
                 {
                     TextBox Field(string label) => Children<TextBox>(editor).Single(field =>
                         System.Windows.Automation.AutomationProperties.GetName(field) == label);
-                    Field("Makroname").Text = "Kurze Pause";
-                    Click(ByLabel(editor, "Warten"));
-                    Field("Wert für den Makroschritt").Text = "0";
-                    Click(ByLabel(editor, "Schritt hinzufügen"));
-                    Click(ByLabel(editor, "Makro speichern"));
+                    Field("Macro name").Text = "Short pause";
+                    Click(ByLabel(editor, "Wait"));
+                    Field("Value for this macro step").Text = "0";
+                    Click(ByLabel(editor, "Add step"));
+                    Click(ByLabel(editor, "Save macro"));
                 }
                 catch (Exception error) { failure = error; }
                 finally { if (editor.IsVisible) editor.Close(); }
             }));
-            Click(ByLabel(palette, "Neues Makro"));
-            if (failure is not null || Children<ListBox>(palette).Single().SelectedItem as string != "Kurze Pause")
-                throw new InvalidOperationException("Makro im Overlay speichern.", failure);
-            Click(ByLabel(palette, "Ausführen"));
-            if (!Children<TextBlock>(palette).Any(label => label.Text.EndsWith("Makro abgeschlossen", StringComparison.Ordinal)))
-                throw new InvalidOperationException("Lokales Wartemakro im Overlay ausführen.");
+            Click(ByLabel(palette, "New macro"));
+            if (failure is not null || Children<ListBox>(palette).Single().SelectedItem as string != "Short pause")
+                throw new InvalidOperationException("Save a macro in the macro window.", failure);
+            Click(ByLabel(palette, "Run"));
+            if (!Children<TextBlock>(palette).Any(label => label.Text.EndsWith("Macro complete", StringComparison.Ordinal)))
+                throw new InvalidOperationException("Run a local wait macro in the macro window.");
             Capture(palette, folder, "makro-overlay");
-            Click(ByLabel(palette, "Klickpunkte setzen"));
-            Window FindPointEditor() => Application.Current.Windows.Cast<Window>().Single(w => w.Title == "EzAdb Klickpunkte");
+            Click(ByLabel(palette, "Set click points"));
+            Window FindPointEditor() => Application.Current.Windows.Cast<Window>().Single(w => w.Title == "EzAdb Click Points");
             var editorWindow = FindPointEditor();
             editorWindow.Opacity = 0;
             editorWindow.UpdateLayout();
             if (controls.IsVisible || !Children<Canvas>(editorWindow).Any() || editorWindow.ActualWidth <= 330 ||
                 new System.Windows.Interop.WindowInteropHelper(editorWindow).Owner != process.MainWindowHandle)
-                throw new InvalidOperationException("Klickpunkteditor deckt das Bild nicht ab.");
-            Click(ByLabel(editorWindow, "Zurück"));
+                throw new InvalidOperationException("The click point editor does not cover the preview.");
+            Click(ByLabel(editorWindow, "Back"));
             dashboard.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-            if (!controls.IsVisible || editorWindow.IsVisible) throw new InvalidOperationException("Makrofenster kehrt nach der Punktbearbeitung nicht zurück.");
-            var pointFile = Path.Combine(settingsFolder, "macros", "Punktfolge.txt");
+            if (!controls.IsVisible || editorWindow.IsVisible) throw new InvalidOperationException("The macro window did not return after point editing.");
+            var pointFile = Path.Combine(settingsFolder, "macros", "Click sequence.txt");
             File.WriteAllText(pointFile, "# EzAdb-Klickpunkte 800x400\npoint 200 80 50 0 1\npoint 500 260 0 200 3");
             controls.Close();
             Click(dashboard.MacroControlsButton);
-            controls = session.Controls ?? throw new InvalidOperationException("Makrofenster lässt sich nicht erneut öffnen.");
+            controls = session.Controls ?? throw new InvalidOperationException("Could not reopen the macro window.");
             controls.Opacity = 0;
             palette = (FrameworkElement)controls.Content;
-            Children<ListBox>(palette).Single().SelectedItem = "Punktfolge";
-            Click(ByLabel(palette, "Bearbeiten"));
+            Children<ListBox>(palette).Single().SelectedItem = "Click sequence";
+            Click(ByLabel(palette, "Edit"));
             editorWindow = FindPointEditor();
             editorWindow.Opacity = 0;
             editorWindow.UpdateLayout();
@@ -481,20 +481,20 @@ internal static class SelfTest
             {
                 void Set(string field, string value) => Children<TextBox>(dialog).Single(box =>
                     System.Windows.Automation.AutomationProperties.GetName(box) == field).Text = value;
-                Set("Wartezeit", "650");
-                Set("Haltedauer", "300");
-                Set("Wiederholungen", "4");
-                Set("Reihenfolge", "2");
-                Click(ByLabel(dialog, "Übernehmen"));
+                Set("Delay", "650");
+                Set("Hold time", "300");
+                Set("Repeat count", "4");
+                Set("Order", "2");
+                Click(ByLabel(dialog, "Apply"));
             });
             Click(ByLabel(editorWindow, "1"));
             Capture((FrameworkElement)editorWindow.Content, folder, "klickpunkte");
-            InDialog(dialog => Click(ByLabel(dialog, "Makro speichern")));
-            Click(ByLabel(editorWindow, "Speichern"));
+            InDialog(dialog => Click(ByLabel(dialog, "Save macro")));
+            Click(ByLabel(editorWindow, "Save"));
             dashboard.Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-            if (failure is not null || File.ReadAllLines(pointFile) is not ["# EzAdb-Klickpunkte 800x400",
+            if (failure is not null || File.ReadAllLines(pointFile) is not ["# EzAdb click points 800x400",
                 "point 500 260 0 200 3", "point 200 80 650 300 4"])
-                throw new InvalidOperationException("Klickpunkte bearbeiten, neu nummerieren und speichern.", failure);
+                throw new InvalidOperationException("Edit, reorder, and save click points.", failure);
         }
         finally
         {
@@ -513,7 +513,7 @@ internal static class SelfTest
         if (installed.Adb is null || installed.Scrcpy is null || installed.Adb != cached.Adb ||
             installed.Scrcpy != cached.Scrcpy || Directory.EnumerateDirectories(root, ".setup-*").Any())
         {
-            throw new InvalidOperationException("Testinstallation wurde nicht wiederverwendet.");
+            throw new InvalidOperationException("Test installation was not reused.");
         }
         try
         {
@@ -523,7 +523,7 @@ internal static class SelfTest
         {
             return;
         }
-        throw new InvalidOperationException("Ein Paket mit falscher Prüfsumme wurde angenommen.");
+        throw new InvalidOperationException("A package with an invalid checksum was accepted.");
     }
 
     private static void Capture(Dashboard dashboard, string? folder, string name) => Capture(dashboard.Root, folder, name);

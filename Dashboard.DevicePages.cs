@@ -60,7 +60,7 @@ internal sealed partial class Dashboard
     private Device? CurrentReadyDevice => adbIssue is null && Selected is { Ready: true } device ? device : null;
 
     private Device RequireDevice() => CurrentReadyDevice ??
-        throw new InvalidOperationException("Wähle oben rechts ein verbundenes und freigegebenes Android-Gerät.");
+        throw new InvalidOperationException("Select a connected and authorized Android device in the upper-right corner.");
 
     private void RefreshDevicePageSelection()
     {
@@ -229,8 +229,8 @@ internal sealed partial class Dashboard
     private string? AskText(string title, string initial = "")
     {
         var field = UiField(title, initial);
-        var ok = new Button { Content = "Übernehmen", IsDefault = true, Style = (Style)FindResource("Primary"), Margin = new Thickness(0, 0, 8, 0) };
-        var cancel = new Button { Content = "Abbrechen", IsCancel = true, Style = (Style)FindResource("Action") };
+        var ok = new Button { Content = "Apply", IsDefault = true, Style = (Style)FindResource("Primary"), Margin = new Thickness(0, 0, 8, 0) };
+        var cancel = new Button { Content = "Cancel", IsCancel = true, Style = (Style)FindResource("Action") };
         var window = new Window
         {
             Owner = this, Title = title, Width = 440, SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
@@ -255,7 +255,7 @@ internal sealed partial class Dashboard
     {
         if (!int.TryParse(field.Text, out var value) || value < min || value > max)
         {
-            throw new ArgumentException($"{name} muss zwischen {min} und {max} liegen.");
+            throw new ArgumentException($"{name} must be between {min} and {max} are listed below.");
         }
         return value;
     }

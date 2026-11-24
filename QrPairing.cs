@@ -26,7 +26,7 @@ internal sealed class QrPairing
             var endpoint = FindEndpoint(services.Output, ServiceName);
             if (endpoint is not null)
             {
-                progress.Report("Gerät gefunden. Kopplung läuft …");
+                progress.Report("Device found. Pairing…");
                 return await tools.PairAsync(endpoint, Password, cancellation).ConfigureAwait(false);
             }
             await Task.Delay(900, cancellation).ConfigureAwait(false);

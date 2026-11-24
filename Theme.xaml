@@ -374,7 +374,7 @@
                                           Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
                         <TextBlock x:Name="Empty" Margin="36,0,28,0" VerticalAlignment="Center" IsHitTestVisible="False"
-                                   Foreground="{StaticResource Muted}" Text="Gerät auswählen" Visibility="Collapsed"/>
+                                   Foreground="{StaticResource Muted}" Text="Choose a device" Visibility="Collapsed"/>
                         <Path Data="M 0,0 L 4,4 8,0" Stroke="{StaticResource Muted}" StrokeThickness="1.5" VerticalAlignment="Center"
                               HorizontalAlignment="Right" Margin="0,0,12,0" IsHitTestVisible="False"/>
                         <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"
@@ -387,7 +387,7 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="SelectedIndex" Value="-1"><Setter TargetName="Empty" Property="Visibility" Value="Visible"/></Trigger>
-                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Empty" Property="Text" Value="Kein Gerät verbunden"/></Trigger>
+                        <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Empty" Property="Text" Value="No device connected"/></Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

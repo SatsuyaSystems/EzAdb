@@ -21,51 +21,51 @@ internal sealed partial class Dashboard
 
     private void SaveMacro(string label, string description)
     {
-        if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Gib dem Makro einen Namen.");
+        if (string.IsNullOrWhiteSpace(label)) throw new ArgumentException("Enter a name for this macro.");
         _ = ParseMacro(description);
         SaveSetting(MacroPath(label), description);
     }
 
     private DevicePage BuildRemotePage()
     {
-        var text = UiField("Text für Android");
+        var text = UiField("Text for Android");
         Task Key(int code) => Send($"input keyevent {code}");
         async Task Send(string command)
         {
             var device = RequireDevice();
             await AndroidShell(device, command);
-            Log($"{device.DisplayName}: Fernbedienung · {command.Split(' ', 2)[0]}");
+            Log($"{device.DisplayName}: Remote control · {command.Split(' ', 2)[0]}");
         }
         var controls = UiCard(UiText("Navigation", heading: true),
-            UiRow(UiAction("Home", () => Key(3), true), UiAction("Zurück", () => Key(4)),
-                UiAction("Letzte Apps", () => Key(187)), UiAction("Benachrichtigungen", () => Send("cmd statusbar expand-notifications"))),
-            UiText("Lautstärke und Energie", heading: true),
-            UiRow(UiAction("Leiser", () => Key(25)), UiAction("Lauter", () => Key(24)),
-                UiAction("Stumm", () => Key(164)), UiAction("Power", () => Key(26)),
-                UiAction("Bildschirm sperren", () => Key(223)), UiAction("Neustart", async () =>
+            UiRow(UiAction("Home", () => Key(3), true), UiAction("Back", () => Key(4)),
+                UiAction("Recent apps", () => Key(187)), UiAction("Notifications", () => Send("cmd statusbar expand-notifications"))),
+            UiText("Volume and power", heading: true),
+            UiRow(UiAction("Volume down", () => Key(25)), UiAction("Volume up", () => Key(24)),
+                UiAction("Mute", () => Key(164)), UiAction("Power", () => Key(26)),
+                UiAction("Lock screen", () => Key(223)), UiAction("Restart", async () =>
                 {
                     var device = RequireDevice();
-                    if (Confirm($"{device.DisplayName} jetzt neu starten?", "Android neu starten"))
+                    if (Confirm($"Restart {device.DisplayName} now?", "Restart Android"))
                     {
                         (await DeviceCommand(device, ["reboot"])).RequireSuccess();
-                        Notify($"Neustart für {device.DisplayName} ausgelöst.");
+                        Notify($"Restart for {device.DisplayName} triggered.");
                     }
                 })),
-            UiText("Beim Sperren gilt die auf Android konfigurierte Sperrverzögerung."),
-            Labeled("Text für Android", text), UiAction("Text senden", () => Send(TypeText(text.Text)), true),
-            UiText("Tippe zuerst in das Zielfeld auf Android. ADB-Texteingabe unterstützt hier ASCII."));
-        return new DevicePage(controls, "Fernbedienung", "Bediene das ausgewählte Gerät direkt über ADB.");
+            UiText("Locking uses the delay configured on Android."),
+            Labeled("Text for Android", text), UiAction("Send text", () => Send(TypeText(text.Text)), true),
+            UiText("Tap the target field on Android first. ADB text input supports ASCII."));
+        return new DevicePage(controls, "Remote control", "Control the selected device with ADB.");
     }
 
     private DevicePage BuildConsolePage()
     {
-        var command = UiField("ADB-Befehl");
-        var output = UiEditor("Live-Ausgabe", 335, readOnly: true);
-        var perDevice = UiCheck("Auf ausgewähltem Gerät ausführen", true);
+        var command = UiField("ADB command");
+        var output = UiEditor("Live output", 335, readOnly: true);
+        var perDevice = UiCheck("Run on selected device", true);
         var history = new List<string>();
         var historyIndex = 0;
         CancellationTokenSource? active = null;
-        var stop = UiAction("Abbrechen", () => { active?.Cancel(); return Task.CompletedTask; });
+        var stop = UiAction("Cancel", () => { active?.Cancel(); return Task.CompletedTask; });
 
         async Task Run()
         {
@@ -92,7 +92,7 @@ internal sealed partial class Dashboard
             }
             catch (OperationCanceledException) when (session.IsCancellationRequested)
             {
-                AppendOutput(output, "[Abgebrochen]");
+                AppendOutput(output, "[Canceled]");
             }
             finally { active = null; }
         }
@@ -102,7 +102,7 @@ internal sealed partial class Dashboard
             if (e.Key == Key.Enter)
             {
                 e.Handled = true;
-                await RunPageTask("ADB-Befehl", Run);
+                await RunPageTask("ADB command", Run);
             }
             else if (history.Count > 0 && e.Key is Key.Up or Key.Down)
             {
@@ -119,12 +119,12 @@ internal sealed partial class Dashboard
             command.Focus();
             return Task.CompletedTask;
         });
-        var view = UiCard(UiRow(Quick("Geräte", "devices -l", false), Quick("Akku", "shell dumpsys battery"),
-                Quick("Geräteinfos", "shell getprop"), Quick("Logcat", "logcat -d -t 200")),
-            output, Labeled("ADB-Befehl", command), UiRow(perDevice, UiAction("Ausführen", Run, true), stop,
-                UiAction("Ausgabe leeren", () => { output.Clear(); return Task.CompletedTask; })),
-            UiText("Pfeil nach oben und unten ruft den Verlauf dieser Sitzung auf. Für globale ADB-Befehle kann die Geräteauswahl abgeschaltet werden."));
-        return new DevicePage(view, "ADB-Konsole", "Führe ADB-Befehle aus und verfolge ihre Ausgabe live.");
+        var view = UiCard(UiRow(Quick("Devices", "devices -l", false), Quick("Battery", "shell dumpsys battery"),
+                Quick("Device info", "shell getprop"), Quick("Logcat", "logcat -d -t 200")),
+            output, Labeled("ADB command", command), UiRow(perDevice, UiAction("Run", Run, true), stop,
+                UiAction("Clear output", () => { output.Clear(); return Task.CompletedTask; })),
+            UiText("Use Up and Down to browse this session’s history. Clear the device selection to run global ADB commands."));
+        return new DevicePage(view, "ADB console", "Run ADB commands and view their output live.");
     }
 
     internal sealed record MacroStep(string[]? Command, int WaitMs = 0, int Repeats = 1, Size? PointDisplay = null, int? DisplayId = null);
@@ -154,22 +154,22 @@ internal sealed partial class Dashboard
                     "text" => new(Shell(TypeText(value, display))),
                     "key" => new(Shell($"{input} keyevent " + Quote(KeyCode(value)))),
                     "wait" when int.TryParse(value, out var ms) && ms is >= 0 and <= 600_000 => new(null, ms),
-                    _ => throw new ArgumentException("Verwende adb, tap, point, swipe, app, text, key oder wait.")
+                    _ => throw new ArgumentException("Use adb, tap, point, swipe, app, text, key, or wait.")
                 });
             }
             catch (ArgumentException error)
             {
-                throw new ArgumentException($"Zeile {i + 1}: {error.Message}", error);
+                throw new ArgumentException($"Line {i + 1}: {error.Message}", error);
             }
         }
-        if (steps.Count == 0) throw new ArgumentException("Das Makro enthält keine Schritte.");
+        if (steps.Count == 0) throw new ArgumentException("The macro has no steps.");
         return steps.ToArray();
 
         static string Numbers(string input, int count)
         {
             var fields = input.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
             if (fields.Length != count || fields.Any(field => !int.TryParse(field, out var n) || n < 0))
-                throw new ArgumentException($"Gib {count} nichtnegative Ganzzahlen ein.");
+                throw new ArgumentException($"Enter {count} non-negative integers.");
             return string.Join(' ', fields.Select(field => int.Parse(field).ToString(System.Globalization.CultureInfo.InvariantCulture)));
         }
 
@@ -177,7 +177,7 @@ internal sealed partial class Dashboard
         {
             var key = value.Trim().ToUpperInvariant();
             if (key.Length == 0 || !key.All(c => char.IsAsciiLetterOrDigit(c) || c == '_'))
-                throw new ArgumentException("Gib eine Android-Taste wie HOME oder BACK ein.");
+                throw new ArgumentException("Enter an Android key such as HOME or BACK.");
             return key;
         }
     }
@@ -186,28 +186,28 @@ internal sealed partial class Dashboard
     {
         if (steps.FirstOrDefault(step => step.PointDisplay.HasValue) is { PointDisplay: { } expected } first &&
             await ReadPointDisplay(device, first.DisplayId, cancellation) != expected)
-            throw new InvalidOperationException("Die Displaygröße hat sich geändert. Stelle die ursprüngliche Auflösung und Ausrichtung wieder her.");
+            throw new InvalidOperationException("The display size has changed. Restore the original resolution and orientation.");
         for (var i = 0; i < steps.Length; i++)
         {
             var step = steps[i];
             for (int repeat = 1; repeat <= step.Repeats; repeat++)
             {
                 cancellation.ThrowIfCancellationRequested();
-                var label = step.PointDisplay.HasValue ? "Punkt" : "Schritt";
+                var label = step.PointDisplay.HasValue ? "Point" : "Step";
                 onStatus($"{device.DisplayName} · {label} {i + 1}/{steps.Length}" + (step.Repeats > 1 ? $" · {repeat}/{step.Repeats}" : ""));
                 if (step.WaitMs > 0) await Task.Delay(step.WaitMs, cancellation);
                 if (step.Command is not null)
                     DeviceCommands.CheckAndroid(await DeviceCommand(device, step.Command, cancellation, seconds: 60));
             }
         }
-        onStatus($"{device.DisplayName} · Makro abgeschlossen");
+        onStatus($"{device.DisplayName} · Macro complete");
     }
 
     private DevicePage BuildMacrosPage()
     {
-        var name = UiField("Makroname");
-        var editor = UiEditor("Makroschritte", 225);
-        var saved = UiList("Gespeicherte Makros", 105);
+        var name = UiField("Macro name");
+        var editor = UiEditor("Macro steps", 225);
+        var saved = UiList("Saved macros", 105);
         var status = UiText("");
         var automatic = UiText("");
         CancellationTokenSource? active = null;
@@ -218,15 +218,15 @@ internal sealed partial class Dashboard
             saved.ItemsSource = SavedMacroNames();
             saved.SelectedItem = selected;
             automatic.Text = ReadSetting(AutomaticMacroFile) is { Length: > 0 } label
-                ? $"Autostart beim Verbinden: {label}" : "Autostart beim Verbinden ist aus.";
+                ? $"Autorun on connection: {label}" : "Autorun on connection is off.";
         }
         void Save()
         {
             SaveMacro(name.Text, editor.Text);
             Reload();
-            status.Text = "Makro gespeichert.";
+            status.Text = "Macro saved.";
         }
-        saved.MouseDoubleClick += async (_, _) => await RunPageTask("Makro öffnen", () =>
+        saved.MouseDoubleClick += async (_, _) => await RunPageTask("Open macro", () =>
         {
             if (saved.SelectedItem is string label)
             {
@@ -235,9 +235,9 @@ internal sealed partial class Dashboard
             }
             return Task.CompletedTask;
         });
-        var view = UiCard(Labeled("Makroname", name), editor,
-            UiText("Ein Schritt pro Zeile. Beispiele: tap 320 640 · swipe 100 900 100 300 400 · app com.android.settings · text Hallo · wait 1000 · key HOME"),
-            UiRow(UiAction("Ausführen", async () =>
+        var view = UiCard(Labeled("Macro name", name), editor,
+            UiText("One step per line. Examples: tap 320 640 · swipe 100 900 100 300 400 · app com.android.settings · text Hello · wait 1000 · key HOME"),
+            UiRow(UiAction("Run", async () =>
             {
                 if (active is not null) return;
                 var device = RequireDevice();
@@ -245,25 +245,25 @@ internal sealed partial class Dashboard
                 using var run = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
                 active = run;
                 try { await RunMacroAsync(device, steps, run.Token, line => status.Text = line); }
-                catch (OperationCanceledException) when (run.IsCancellationRequested) { status.Text = "Makro abgebrochen."; }
+                catch (OperationCanceledException) when (run.IsCancellationRequested) { status.Text = "Macro canceled."; }
                 finally { active = null; }
-            }, true), UiAction("Abbrechen", () => { active?.Cancel(); return Task.CompletedTask; }),
-                UiAction("Speichern", () => { Save(); return Task.CompletedTask; }),
-                UiAction("Beispiel laden", () => { editor.Text = "# Einstellungen öffnen\napp com.android.settings\nwait 800\nkey HOME"; return Task.CompletedTask; })),
-            status, UiText("Gespeicherte Makros per Doppelklick öffnen.", heading: true), saved,
-            UiRow(UiAction("Beim Verbinden starten", () =>
+            }, true), UiAction("Cancel", () => { active?.Cancel(); return Task.CompletedTask; }),
+                UiAction("Save", () => { Save(); return Task.CompletedTask; }),
+                UiAction("Load example", () => { editor.Text = "# Open Settings\napp com.android.settings\nwait 800\nkey HOME"; return Task.CompletedTask; })),
+            status, UiText("Double-click a saved macro to open it.", heading: true), saved,
+            UiRow(UiAction("Run on connection", () =>
             {
-                if (saved.SelectedItem is not string label) throw new InvalidOperationException("Wähle ein gespeichertes Makro aus.");
-                if (Confirm($"„{label}“ automatisch auf neu freigegebenen Geräten ausführen, auch beim Start von EzAdb?", "Makro-Autostart"))
+                if (saved.SelectedItem is not string label) throw new InvalidOperationException("Choose a saved macro.");
+                if (Confirm($"Run “{label}” automatically on newly authorized devices, including at EzAdb startup?", "Macro autorun"))
                 {
                     SaveSetting(AutomaticMacroFile, label);
                     Reload();
                 }
                 return Task.CompletedTask;
-            }), UiAction("Autostart ausschalten", () => { SaveSetting(AutomaticMacroFile, ""); Reload(); return Task.CompletedTask; })), automatic);
-        var back = UiAction("Zurück zum Bildschirm", () => { ScreenNav.IsChecked = true; return Task.CompletedTask; });
-        return new DevicePage(UiStack(back, view), "Makrobibliothek",
-            "Verwalte deine Makros und den Autostart. Die Makro-Steuerung für laufende Sitzungen findest du unter Bildschirm.", _ => Reload());
+            }), UiAction("Disable autorun", () => { SaveSetting(AutomaticMacroFile, ""); Reload(); return Task.CompletedTask; })), automatic);
+        var back = UiAction("Back to Screen", () => { ScreenNav.IsChecked = true; return Task.CompletedTask; });
+        return new DevicePage(UiStack(back, view), "Macro library",
+            "Manage macros and autorun. Open macro controls for active sessions from Screen.", _ => Reload());
     }
 
     private void RunConnectionMacro(Device[] previous)
@@ -274,12 +274,12 @@ internal sealed partial class Dashboard
             !alreadyReady.Contains((device.Serial, device.TransportId))))
         {
             if (!automaticRuns.Add(device.Serial)) continue;
-            _ = RunPageTask("Makro-Autostart", async () =>
+            _ = RunPageTask("Macro autorun", async () =>
             {
                 try
                 {
                     var steps = ParseMacro(File.ReadAllText(LocalChild(MacroDirectory, label + ".txt")));
-                    Log($"Autostart: {label} auf {device.DisplayName}");
+                    Log($"Autorun: {label} on {device.DisplayName}");
                     await RunMacroAsync(device, steps, lifetime.Token, Log);
                 }
                 finally { automaticRuns.Remove(device.Serial); }
@@ -289,12 +289,12 @@ internal sealed partial class Dashboard
 
     private DevicePage BuildBatchPage()
     {
-        batchDevices = UiList("Android-Geräte für die parallele Aktion", 156, multiple: true, nameof(Device.ConnectedName));
-        var remote = UiField("Android-Pfad", "/sdcard/Download");
-        var command = UiField("ADB-Befehl", "shell getprop ro.product.model");
-        var output = UiEditor("Parallele Ausgabe", 195, readOnly: true);
+        batchDevices = UiList("Android devices for the batch action", 156, multiple: true, nameof(Device.ConnectedName));
+        var remote = UiField("Android path", "/sdcard/Download");
+        var command = UiField("ADB command", "shell getprop ro.product.model");
+        var output = UiEditor("Batch output", 195, readOnly: true);
         Device[] Pick() => batchDevices.SelectedItems.Cast<Device>().ToArray() is { Length: > 0 } selected
-            ? selected : throw new InvalidOperationException("Markiere mindestens ein freigegebenes Gerät.");
+            ? selected : throw new InvalidOperationException("Select at least one authorized device.");
 
         async Task Execute(Device[] devices, Func<Device, Task> action)
         {
@@ -303,24 +303,24 @@ internal sealed partial class Dashboard
                 try
                 {
                     await action(device);
-                    AppendOutput(output, $"[{device.DisplayName} / {device.Serial}] Fertig.");
+                    AppendOutput(output, $"[{device.DisplayName} / {device.Serial}] Done.");
                 }
                 catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { }
                 catch (Exception error) { AppendOutput(output, $"[{device.DisplayName} / {device.Serial}] {error.Message}"); }
             }));
         }
 
-        var view = UiCard(batchDevices, UiRow(UiAction("Alle auswählen", () =>
+        var view = UiCard(batchDevices, UiRow(UiAction("Select all", () =>
                 { batchDevices.SelectAll(); return Task.CompletedTask; }),
-            UiAction("Bildschirmfenster öffnen", () =>
+            UiAction("Open screen windows", () =>
             {
                 foreach (var device in Pick()) _ = MirrorDeviceAsync(device);
                 return Task.CompletedTask;
             }, true),
-            UiAction("APKs installieren", async () =>
+            UiAction("Install APKs", async () =>
             {
                 var devices = Pick();
-                var dialog = new OpenFileDialog { Title = "APKs für alle ausgewählten Geräte", Filter = "Android-APKs (*.apk)|*.apk", Multiselect = true };
+                var dialog = new OpenFileDialog { Title = "APKs for all selected devices", Filter = "Android APKs (*.apk)|*.apk", Multiselect = true };
                 if (dialog.ShowDialog(this) != true) return;
                 await Execute(devices, async device =>
                 {
@@ -331,20 +331,20 @@ internal sealed partial class Dashboard
                     }
                 });
             })),
-            Labeled("Android-Pfad für alle ausgewählten Geräte", remote),
-            UiRow(UiAction("Dateien hochladen", async () =>
+            Labeled("Android path for all selected devices", remote),
+            UiRow(UiAction("Upload files", async () =>
                 {
                     var devices = Pick();
                     var path = PathOnDevice(remote.Text);
-                    var dialog = new OpenFileDialog { Title = "Dateien zum Upload auswählen", Multiselect = true };
+                    var dialog = new OpenFileDialog { Title = "Select files to upload", Multiselect = true };
                     if (dialog.ShowDialog(this) != true) return;
                     await Execute(devices, device => PushPathsAsync(device, path, dialog.FileNames, askOverwrite: false));
                 }),
-                UiAction("Datei oder Ordner herunterladen", async () =>
+                UiAction("Download file or folder", async () =>
                 {
                     var devices = Pick();
                     var path = PathOnDevice(remote.Text);
-                    if (BrowseDirectory("Windows-Zielordner auswählen") is not { } folder) return;
+                    if (BrowseDirectory("Choose a Windows destination folder") is not { } folder) return;
                     await Execute(devices, async device =>
                     {
                         var target = Path.Combine(folder, $"{SafeFolderName(device.Serial)}-{Guid.NewGuid().ToString("N")[..6]}");
@@ -352,8 +352,8 @@ internal sealed partial class Dashboard
                         await PullPathsAsync(device, [path], target, askOverwrite: false);
                     });
                 })),
-            Labeled("ADB-Befehl für alle ausgewählten Geräte", command),
-            UiAction("Parallel ausführen", async () =>
+            Labeled("ADB command for all selected devices", command),
+            UiAction("Run on selected devices", async () =>
             {
                 var arguments = ParseAdbArguments(command.Text, deviceOnly: true);
                 await Execute(Pick(), async device =>
@@ -363,7 +363,7 @@ internal sealed partial class Dashboard
                 });
             }, true), output);
         UpdateBatchDevices();
-        return new DevicePage(view, "Mehrere Geräte", "Wähle Geräte mit Strg oder Umschalt aus und führe Aktionen parallel aus.");
+        return new DevicePage(view, "Multiple devices", "Use Ctrl or Shift to select devices and run actions in parallel.");
     }
 
     private void UpdateBatchDevices()

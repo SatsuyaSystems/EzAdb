@@ -21,16 +21,16 @@ internal sealed partial class Dashboard
     {
         using var loading = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         var token = loading.Token;
-        var search = UiField("App-Name suchen");
-        var list = UiList("Startbare Android-Apps", 285);
+        var search = UiField("Search by app name");
+        var list = UiList("Launchable Android apps", 285);
         list.ItemTemplate = (DataTemplate)FindResource("AppPickerRow");
         ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
-        var status = UiText("Startbare Apps werden geladen …");
-        var open = new Button { Content = "App auswählen", IsDefault = true, IsEnabled = false, Style = (Style)FindResource("Primary") };
-        var cancel = new Button { Content = "Abbrechen", IsCancel = true, Style = (Style)FindResource("Action"),
+        var status = UiText("Loading launchable apps…");
+        var open = new Button { Content = "Choose app", IsDefault = true, IsEnabled = false, Style = (Style)FindResource("Primary") };
+        var cancel = new Button { Content = "Cancel", IsCancel = true, Style = (Style)FindResource("Action"),
             Margin = new Thickness(8, 0, 0, 0) };
-        var dialog = CreateToolDialog(owner, "Android-App auswählen", 510,
-            UiStack(UiText(device.ConnectedName), Labeled("App-Name oder Paket-ID suchen", search), list, status, UiRow(open, cancel)));
+        var dialog = CreateToolDialog(owner, "Select an Android app", 510,
+            UiStack(UiText(device.ConnectedName), Labeled("Search by app name or package ID", search), list, status, UiRow(open, cancel)));
         LaunchableApp[] apps = [];
 
         void Filter()
@@ -38,8 +38,8 @@ internal sealed partial class Dashboard
             var filtered = FilterLaunchableApps(apps, search.Text);
             list.ItemsSource = filtered;
             list.SelectedIndex = filtered.Length > 0 ? 0 : -1;
-            status.Text = apps.Length == 0 ? "Keine startbaren Apps gefunden." :
-                filtered.Length == 0 ? "Keine passende App gefunden." : $"{filtered.Length} von {apps.Length} Apps";
+            status.Text = apps.Length == 0 ? "No launchable apps found." :
+                filtered.Length == 0 ? "No matching apps found." : $"{filtered.Length} of {apps.Length} Apps";
         }
         search.TextChanged += (_, _) => { if (apps.Length > 0) Filter(); };
         list.SelectionChanged += (_, _) => open.IsEnabled = list.SelectedItem is LaunchableApp;
@@ -66,7 +66,7 @@ internal sealed partial class Dashboard
                 if (!token.IsCancellationRequested) Filter();
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-            catch (Exception error) { status.Text = $"Apps konnten nicht geladen werden. {error.Message}"; }
+            catch (Exception error) { status.Text = $"Could not load apps. {error.Message}"; }
         };
         dialog.Closed += (_, _) => loading.Cancel();
         return dialog.ShowDialog() == true ? list.SelectedItem as LaunchableApp : null;
@@ -78,7 +78,7 @@ internal sealed partial class Dashboard
         probe.CancelAfter(TimeSpan.FromSeconds(20));
         try
         {
-            var result = await tools.RunScrcpyAsync(device, "EzAdb App-Auswahl", ["--list-apps"], probe.Token);
+            var result = await tools.RunScrcpyAsync(device, "EzAdb App Picker", ["--list-apps"], probe.Token);
             if (result.ExitCode == 0 && DeviceCommands.ParseAppNames(result.Details) is { Count: > 0 } names)
             {
                 return names.Select(pair => new LaunchableApp(pair.Value, pair.Key)).ToArray();

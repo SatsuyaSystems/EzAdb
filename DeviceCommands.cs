@@ -40,7 +40,7 @@ internal static partial class DeviceCommands
     {
         if (string.IsNullOrWhiteSpace(name) || name is "." or ".." || name.Contains('/') || name.Contains('\0'))
         {
-            throw new ArgumentException("Gib einen gültigen Dateinamen ohne Schrägstrich ein.");
+            throw new ArgumentException("Enter a valid file name without slashes.");
         }
         return directory.TrimEnd('/') + "/" + name;
     }
@@ -51,7 +51,7 @@ internal static partial class DeviceCommands
     public static string ListDirectory(string path)
     {
         var p = Quote(path);
-        return $"if [ ! -d {p} ] || [ ! -r {p} ] || [ ! -x {p} ]; then echo 'Ordner nicht zugänglich' >&2; exit 1; fi; " +
+        return $"if [ ! -d {p} ] || [ ! -r {p} ] || [ ! -x {p} ]; then echo 'Folder is not accessible' >&2; exit 1; fi; " +
                $"cd {p} || exit 1; for p in .[!.]* ..?* *; do " +
                "[ -e \"$p\" ] || [ -L \"$p\" ] || continue; " +
                "if [ -d \"$p\" ]; then t=d; else t=f; fi; printf '%s\\0%s\\0' \"$t\" \"$p\"; done; :";
@@ -59,8 +59,8 @@ internal static partial class DeviceCommands
 
     internal sealed record RemoteEntry(string Name, string FullPath, bool IsDirectory)
     {
-        public string Kind => IsDirectory ? "Ordner" : System.IO.Path.GetExtension(Name) is { Length: > 1 } extension
-            ? extension[1..].ToUpperInvariant() + "-Datei" : "Datei";
+        public string Kind => IsDirectory ? "Folder" : System.IO.Path.GetExtension(Name) is { Length: > 1 } extension
+            ? extension[1..].ToUpperInvariant() + " file" : "File";
         public string Folder => Parent(FullPath);
     }
 
@@ -120,7 +120,7 @@ internal static partial class DeviceCommands
     public static bool IsPackage(string package) => PackagePattern().IsMatch(package);
 
     public static string RequirePackage(string package) => IsPackage(package.Trim())
-        ? package.Trim() : throw new ArgumentException("Gib eine Paket-ID ein, zum Beispiel com.android.settings.");
+        ? package.Trim() : throw new ArgumentException("Enter a package ID, for example com.android.settings.");
 
     public static string Launch(string package, int? display = null) =>
         $"am start --user current {(display is { } id ? $"--display {id} " : "")}" +
@@ -139,7 +139,7 @@ internal static partial class DeviceCommands
     {
         if (text.Length == 0 || text.Any(c => c is not ('\r' or '\n' or '\t') && (c < ' ' || c > '~')))
         {
-            throw new ArgumentException("ADB-Texteingabe unterstützt hier ASCII-Zeichen. Unicode kannst du im scrcpy-Fenster per Einfügen übertragen.");
+            throw new ArgumentException("ADB text input supports ASCII characters. Paste Unicode text directly into the scrcpy window.");
         }
         var commands = new List<string>();
         var input = InputPrefix(display);
@@ -172,12 +172,12 @@ internal static partial class DeviceCommands
     {
         if (string.IsNullOrWhiteSpace(line) || line.Contains('\0'))
         {
-            throw new ArgumentException("Gib einen ADB-Befehl ein.");
+            throw new ArgumentException("Enter an ADB command.");
         }
         var argv = CommandLineToArgvW("adb " + line, out var count);
         if (argv == IntPtr.Zero)
         {
-            throw new ArgumentException("Der ADB-Befehl konnte nicht gelesen werden.");
+            throw new ArgumentException("Could not read the ADB command.");
         }
         try
         {
@@ -191,7 +191,7 @@ internal static partial class DeviceCommands
             if (args.Length == 0 || (deviceOnly && (args[0].StartsWith('-') ||
                 args[0] is "connect" or "disconnect" or "pair" or "kill-server" or "start-server" or "devices" or "mdns" or "reconnect")))
             {
-                throw new ArgumentException("Verwende für diese Aktion einen gerätebezogenen ADB-Befehl ohne globale ADB-Optionen.");
+                throw new ArgumentException("Use a device-specific ADB command without global ADB options.");
             }
             return args;
         }

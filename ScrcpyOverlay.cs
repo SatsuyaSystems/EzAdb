@@ -20,15 +20,15 @@ internal sealed class ScrcpyOverlay : IDisposable
         process.Refresh();
         owner = process.MainWindowHandle;
         if (!TryGetBounds(out var bounds))
-            throw new InvalidOperationException("Das Android-Bildschirmfenster ist noch nicht verfügbar.");
+            throw new InvalidOperationException("The Android screen window is not ready yet.");
         if (IsIconic(owner) || !IsWindowVisible(owner))
-            throw new InvalidOperationException("Hole das Android-Bildschirmfenster nach vorne, um Klickpunkte zu setzen.");
+            throw new InvalidOperationException("Bring the Android screen window forward to set click points.");
 
         var dpi = GetDpiForWindow(owner);
         var scale = dpi == 0 ? 1 : dpi / 96.0;
         Window = new Window
         {
-            Title = "EzAdb Klickpunkte", WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize,
+            Title = "EzAdb Click Points", WindowStyle = WindowStyle.None, ResizeMode = ResizeMode.NoResize,
             AllowsTransparency = true, Background = Brushes.Transparent, ShowInTaskbar = false,
             Width = bounds.Width / scale, Height = bounds.Height / scale, Left = bounds.Left / scale, Top = bounds.Top / scale
         };

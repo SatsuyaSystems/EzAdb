@@ -62,14 +62,14 @@ internal sealed partial class Dashboard
     private DevicePage BuildHealthPage()
     {
         healthTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-        var battery = Metric("Akkustand", 0, 100);
-        var heat = Metric("Akkutemperatur", 0, 65);
-        var cpu = Metric("CPU-Auslastung", 0, 100);
-        var ram = Metric("RAM belegt", 0, 100);
-        var storage = Metric("Speicher belegt", 0, 100);
-        var system = UiText("Gerätedaten erscheinen nach der ersten Messung.");
-        var status = UiText("Wähle ein Android-Gerät.");
-        var paused = UiCheck("Live-Messung pausieren");
+        var battery = Metric("Battery level", 0, 100);
+        var heat = Metric("Battery temperature", 0, 65);
+        var cpu = Metric("CPU usage", 0, 100);
+        var ram = Metric("RAM used", 0, 100);
+        var storage = Metric("Storage used", 0, 100);
+        var system = UiText("Device data will appear after the first refresh.");
+        var status = UiText("Choose an Android device.");
+        var paused = UiCheck("Pause live updates");
         var refreshingHealth = false;
         CancellationTokenSource? currentPoll = null;
         Device? monitored = null;
@@ -92,26 +92,26 @@ internal sealed partial class Dashboard
                 UpdateMetric(cpu, data.Cpu, Format(data.Cpu, "%"));
                 UpdateMetric(ram, Percent(data.RamUsed, data.RamTotal), Usage(data.RamUsed, data.RamTotal));
                 UpdateMetric(storage, Percent(data.StorageUsed, data.StorageTotal), Usage(data.StorageUsed, data.StorageTotal));
-                var labels = new[] { "Hersteller", "Modell", "Android", "API", "ABI", "Sicherheitspatch", "Kernel", "Laufzeit" };
+                var labels = new[] { "Manufacturer", "Model", "Android", "API", "ABI", "Security patch", "Kernel", "Uptime" };
                 system.Text = string.Join("  ·  ", data.DeviceInfo.Select((value, i) =>
                 {
                     var display = i == 7 ? Uptime(value) : value;
                     return string.IsNullOrWhiteSpace(display) ? "" : $"{labels[i]}: {display}";
                 }).Where(line => line.Length > 0));
-                status.Text = $"Letzte Messung {DateTime.Now:HH:mm:ss} · {device.DisplayName}";
+                status.Text = $"Last update {DateTime.Now:HH:mm:ss} · {device.DisplayName}";
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
             catch (ToolDependencyException error) { ReportDependency(error); }
-            catch (Exception error) { status.Text = $"Messung fehlgeschlagen: {error.Message}"; }
+            catch (Exception error) { status.Text = $"Could not collect measurements: {error.Message}"; }
             finally { currentPoll = null; refreshingHealth = false; }
         }
         healthTimer.Tick += async (_, _) => await Refresh();
-        paused.Checked += (_, _) => { currentPoll?.Cancel(); status.Text = "Live-Messung pausiert."; };
+        paused.Checked += (_, _) => { currentPoll?.Cancel(); status.Text = "Live updates paused."; };
         paused.Unchecked += async (_, _) => { if (allowDevicePolling) await Refresh(); };
         var grid = new System.Windows.Controls.Primitives.UniformGrid { Columns = 3 };
         foreach (var metric in metrics) grid.Children.Add(metric.Card);
-        return new DevicePage(UiStack(UiRow(paused), grid, UiCard(UiText("Geräteinformationen", true), system, status)),
-            "Gerätemonitor", "Messwerte im Vier-Sekunden-Takt und Diagramme der letzten 38 Messungen.", device =>
+        return new DevicePage(UiStack(UiRow(paused), grid, UiCard(UiText("Device information", true), system, status)),
+            "Device monitor", "Updates every four seconds. Charts show the last 38 samples.", device =>
             {
                 if (!Equals(monitored, device))
                 {
@@ -120,15 +120,15 @@ internal sealed partial class Dashboard
                     foreach (var metric in metrics) { metric.History.Clear(); metric.Line.Points.Clear(); metric.Value.Text = "—"; }
                     system.Text = "";
                 }
-                status.Text = device is null ? "Wähle ein Android-Gerät." : "Warte auf die nächste Messung.";
+                status.Text = device is null ? "Choose an Android device." : "Waiting for the next update.";
                 if (device is not null && allowDevicePolling) { healthTimer.Start(); _ = Refresh(); }
                 else healthTimer.Stop();
             });
 
-        static string Format(double? value, string unit) => value is { } number ? $"{number:0.#} {unit}" : "Nicht verfügbar";
+        static string Format(double? value, string unit) => value is { } number ? $"{number:0.#} {unit}" : "Unavailable";
         static double? Percent(double? value, double? max) => max is > 0 ? value / max * 100 : null;
         static string Usage(double? value, double? max) => value is { } used && max is { } total
-            ? $"{used / 1048576:0.0} / {total / 1048576:0.0} GB" : "Nicht verfügbar";
+            ? $"{used / 1048576:0.0} / {total / 1048576:0.0} GB" : "Unavailable";
         static string Uptime(string value) => double.TryParse(value.Split(' ')[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var seconds) &&
             seconds is >= 0 and < 3_000_000_000 ? $"{TimeSpan.FromSeconds(seconds).TotalHours:0.0} h" : "";
     }
@@ -172,21 +172,21 @@ internal sealed partial class Dashboard
     private sealed record BackupManifest(string Device, DateTimeOffset Created, BackupEntry[] Entries, int Failures);
     private sealed record BackupChoice(string Folder, BackupManifest Manifest)
     {
-        public string Display => $"{Manifest.Created.ToLocalTime():dd.MM.yyyy HH:mm}  ·  {Manifest.Device}  ·  {Manifest.Entries.Length} Quellen" +
-                                (Manifest.Failures > 0 ? $"  ·  {Manifest.Failures} ausgelassen" : "");
+        public string Display => $"{Manifest.Created.ToLocalTime():yyyy-MM-dd HH:mm}  ·  {Manifest.Device}  ·  {Manifest.Entries.Length} sources" +
+                                (Manifest.Failures > 0 ? $"  ·  {Manifest.Failures} skipped" : "");
     }
 
     private DevicePage BuildBackupPage()
     {
         var root = ReadSetting(BackupRootFile) ?? Path.Combine(LocalData, "Backups");
         var folderLabel = UiText(root);
-        var categories = new[] { (UiCheck("Kamera (DCIM)", true), "/sdcard/DCIM"), (UiCheck("Bilder", true), "/sdcard/Pictures"),
+        var categories = new[] { (UiCheck("Camera (DCIM)", true), "/sdcard/DCIM"), (UiCheck("Pictures", true), "/sdcard/Pictures"),
             (UiCheck("Videos", true), "/sdcard/Movies"), (UiCheck("Downloads", true), "/sdcard/Download"),
-            (UiCheck("Dokumente", true), "/sdcard/Documents"), (UiCheck("Musik"), "/sdcard/Music") };
-        var custom = UiField("Weiterer Android-Pfad");
-        var list = UiList("Gespeicherte Backups", 185, display: nameof(BackupChoice.Display));
-        var status = UiText("Backups enthalten nur Dateien, auf die ADB Zugriff hat.");
-        var contents = UiList("Quellen im ausgewählten Backup", 102, multiple: true, nameof(BackupEntry.Remote));
+            (UiCheck("Documents", true), "/sdcard/Documents"), (UiCheck("Music"), "/sdcard/Music") };
+        var custom = UiField("Additional Android path");
+        var list = UiList("Saved backups", 185, display: nameof(BackupChoice.Display));
+        var status = UiText("Backups include files accessible through ADB.");
+        var contents = UiList("Sources in selected backup", 102, multiple: true, nameof(BackupEntry.Remote));
 
         void Reload()
         {
@@ -208,7 +208,7 @@ internal sealed partial class Dashboard
             list.ItemsSource = choices.OrderByDescending(item => item.Manifest.Created).ToArray();
         }
 
-        BackupChoice Pick() => list.SelectedItem as BackupChoice ?? throw new InvalidOperationException("Wähle ein Backup aus.");
+        BackupChoice Pick() => list.SelectedItem as BackupChoice ?? throw new InvalidOperationException("Choose a backup.");
         list.SelectionChanged += (_, _) =>
         {
             contents.ItemsSource = (list.SelectedItem as BackupChoice)?.Manifest.Entries;
@@ -222,11 +222,11 @@ internal sealed partial class Dashboard
             if (!string.IsNullOrWhiteSpace(custom.Text))
             {
                 var extra = PathOnDevice(custom.Text.Trim());
-                if (extra == "/") throw new ArgumentException("Wähle einen konkreten zugänglichen Android-Ordner oder eine Datei.");
+                if (extra == "/") throw new ArgumentException("Choose a specific accessible Android folder or file.");
                 paths.Add(extra);
             }
             var sources = paths.Distinct(StringComparer.Ordinal).ToArray();
-            if (sources.Length == 0) throw new ArgumentException("Wähle mindestens eine Quelle.");
+            if (sources.Length == 0) throw new ArgumentException("Select at least one source.");
             var created = DateTimeOffset.Now;
             var folder = Path.Combine(root, $"EzAdb-{created:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N")[..6]}");
             Directory.CreateDirectory(folder);
@@ -235,10 +235,10 @@ internal sealed partial class Dashboard
             for (var i = 0; i < sources.Length; i++)
             {
                 var source = sources[i];
-                var localName = $"Quelle-{i + 1}";
+                var localName = $"Source-{i + 1}";
                 var destination = Path.Combine(folder, localName);
                 Directory.CreateDirectory(destination);
-                status.Text = $"Sichere {source} ({i + 1}/{sources.Length}) …";
+                status.Text = $"Back up {source} ({i + 1}/{sources.Length}) …";
                 try
                 {
                     await PullPathsAsync(device, [source], destination, askOverwrite: false);
@@ -259,7 +259,7 @@ internal sealed partial class Dashboard
                 }
             }
             Reload();
-            status.Text = $"{entries.Count} von {sources.Length} Quellen gesichert · {folder}";
+            status.Text = $"{entries.Count} of {sources.Length} sources backed up · {folder}";
         }
 
         async Task Restore()
@@ -267,18 +267,18 @@ internal sealed partial class Dashboard
             var backup = Pick();
             var device = RequireDevice();
             var selection = contents.SelectedItems.Cast<BackupEntry>().ToArray();
-            if (selection.Length == 0) throw new InvalidOperationException("Markiere die Quellen, die wiederhergestellt werden sollen.");
-            if (!Confirm($"{selection.Length} Quellen auf {device.DisplayName} wiederherstellen? Gleichnamige Dateien in den ursprünglichen Ordnern können überschrieben werden.", "Backup wiederherstellen")) return;
+            if (selection.Length == 0) throw new InvalidOperationException("Select the sources to restore.");
+            if (!Confirm($"Restore {selection.Length} sources on {device.DisplayName}? Files with the same name in the original folders may be overwritten.", "Restore backup")) return;
             foreach (var entry in selection)
                 await RestorePath(device, BackupEntryPath(backup, entry), PathOnDevice(entry.Remote));
-            status.Text = $"Wiederherstellung auf {device.DisplayName} abgeschlossen.";
+            status.Text = $"Restoring to {device.DisplayName} completed.";
         }
 
         async Task RestoreFile()
         {
             var backup = Pick();
             var device = RequireDevice();
-            var dialog = new OpenFileDialog { Title = "Dateien aus diesem Backup wiederherstellen", InitialDirectory = backup.Folder, Multiselect = true };
+            var dialog = new OpenFileDialog { Title = "Restore files from this backup", InitialDirectory = backup.Folder, Multiselect = true };
             if (dialog.ShowDialog(this) != true) return;
             var selected = new List<(string Local, string Remote)>();
             foreach (var file in dialog.FileNames)
@@ -286,20 +286,20 @@ internal sealed partial class Dashboard
                 var match = backup.Manifest.Entries.Select(entry => (Entry: entry, Path: BackupEntryPath(backup, entry)))
                     .FirstOrDefault(item => file.Equals(item.Path, StringComparison.OrdinalIgnoreCase) ||
                         file.StartsWith(item.Path + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
-                if (match.Entry is null) throw new IOException("Wähle Dateien aus den gesicherten Quellen dieses Backups.");
+                if (match.Entry is null) throw new IOException("Choose files from the sources in this backup.");
                 var relative = file.Equals(match.Path, StringComparison.OrdinalIgnoreCase) ? "" : file[(match.Path.Length + 1)..];
                 selected.Add((file, PathOnDevice(match.Entry.Remote + "/" + relative.Replace('\\', '/'))));
             }
-            if (!Confirm($"{selected.Count} Dateien auf {device.DisplayName} wiederherstellen und gleichnamige Dateien überschreiben?", "Dateien wiederherstellen")) return;
+            if (!Confirm($"Restore {selected.Count} files to {device.DisplayName} and overwrite files with the same name?", "Restore files")) return;
             foreach (var (local, remote) in selected) await RestorePath(device, local, remote);
-            status.Text = $"{selected.Count} Dateien wiederhergestellt.";
+            status.Text = $"{selected.Count} files restored.";
         }
 
-        var view = UiStack(UiCard(UiText("Backup erstellen", true), UiRow(categories.Select(category => (UIElement)category.Item1).ToArray()),
-                Labeled("Weitere Datei oder weiterer Ordner auf Android", custom), UiRow(UiAction("Backup erstellen", Create, true),
-                    UiAction("Backup-Ordner ändern", () =>
+        var view = UiStack(UiCard(UiText("Create backup", true), UiRow(categories.Select(category => (UIElement)category.Item1).ToArray()),
+                Labeled("Additional Android file or folder", custom), UiRow(UiAction("Create backup", Create, true),
+                    UiAction("Change backup folder", () =>
                     {
-                        if (BrowseDirectory("Backup-Ordner auswählen") is { } chosen)
+                        if (BrowseDirectory("Choose backup folder") is { } chosen)
                         {
                             root = chosen;
                             SaveSetting(BackupRootFile, root);
@@ -307,30 +307,30 @@ internal sealed partial class Dashboard
                         }
                         return Task.CompletedTask;
                     })), folderLabel, status),
-            UiCard(UiText("Gespeicherte Backups", true), list, contents,
-                UiRow(UiAction("Quellen wiederherstellen", Restore, true), UiAction("Einzelne Dateien wiederherstellen", RestoreFile),
-                    UiAction("Im Explorer öffnen", () =>
+            UiCard(UiText("Saved backups", true), list, contents,
+                UiRow(UiAction("Restore sources", Restore, true), UiAction("Restore individual files", RestoreFile),
+                    UiAction("Open in File Explorer", () =>
                     {
                         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Pick().Folder) { UseShellExecute = true });
                         return Task.CompletedTask;
                     }),
-                    UiAction("Backup löschen", () =>
+                    UiAction("Delete backup", () =>
                     {
                         var backup = Pick();
-                        if (Confirm($"Dieses lokale Backup löschen?\n{backup.Folder}", "Backup löschen"))
+                        if (Confirm($"Delete this local backup?\n{backup.Folder}", "Delete backup"))
                         {
                             var path = Path.GetFullPath(backup.Folder);
                             if (!string.Equals(Path.GetDirectoryName(path), Path.TrimEndingDirectorySeparator(Path.GetFullPath(root)), StringComparison.OrdinalIgnoreCase) ||
                                 !Path.GetFileName(path).StartsWith("EzAdb-", StringComparison.Ordinal) ||
                                 (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
-                                throw new IOException("Dieser Ordner liegt außerhalb der verwalteten Backups.");
+                                throw new IOException("This folder is outside the managed backup location.");
                             Directory.Delete(path, recursive: true);
                             Reload();
                         }
                         return Task.CompletedTask;
                     }))));
         Reload();
-        return new DevicePage(view, "Backups", "Sichere zugängliche Android-Dateien und stelle sie einzeln oder nach Quelle wieder her.");
+        return new DevicePage(view, "Backups", "Back up accessible Android files and restore individual files or entire sources.");
     }
 
     private static string BackupEntryPath(BackupChoice backup, BackupEntry entry) =>
@@ -343,6 +343,6 @@ internal sealed partial class Dashboard
         var destination = Path.GetFileName(Path.TrimEndingDirectorySeparator(local)).Equals(Leaf(remote), StringComparison.Ordinal)
             ? parent.TrimEnd('/') + "/" : remote;
         (await DeviceCommand(device, ["push", local, destination], seconds: 0)).RequireSuccess();
-        Log($"{device.DisplayName}: {remote} wiederhergestellt.");
+        Log($"{device.DisplayName}: {remote} restored.");
     }
 }

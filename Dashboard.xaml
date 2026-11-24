@@ -29,10 +29,10 @@
                         <StackPanel DockPanel.Dock="Bottom">
                             <Border Height="1" Background="{StaticResource Line}" Margin="4,0,4,12"/>
                             <Button x:Name="ToolsButton" Style="{StaticResource Action}" Click="OnTools" HorizontalAlignment="Stretch"
-                                    Background="Transparent" Padding="10,0" AutomationProperties.Name="ADB und scrcpy verwalten">
+                                    Background="Transparent" Padding="10,0" AutomationProperties.Name="Manage ADB and scrcpy">
                                 <Grid Width="150">
                                     <Path Data="{StaticResource ToolsIcon}" Style="{StaticResource Icon}" HorizontalAlignment="Left"/>
-                                    <TextBlock Text="Tools verwalten" Margin="29,0,0,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Manage tools" Margin="29,0,0,0" VerticalAlignment="Center"/>
                                     <Ellipse x:Name="ToolWarning" Fill="{StaticResource Amber}" Width="7" Height="7" HorizontalAlignment="Right"
                                              VerticalAlignment="Center" Visibility="Collapsed"/>
                                 </Grid>
@@ -40,24 +40,24 @@
                         </StackPanel>
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel>
-                            <TextBlock Text="Verbindungen" Style="{StaticResource SidebarHeading}"/>
-                            <RadioButton x:Name="OverviewNav" GroupName="Pages" Content="Geräte" Tag="{StaticResource DevicesIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <RadioButton x:Name="WifiNav" GroupName="Pages" Content="WLAN" Tag="{StaticResource WifiIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <RadioButton x:Name="BatchNav" GroupName="Pages" Content="Mehrere Geräte" Tag="{StaticResource DevicesIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <TextBlock Text="Inhalte" Style="{StaticResource SidebarHeading}"/>
-                            <RadioButton x:Name="FilesNav" GroupName="Pages" Content="Dateien" Tag="{StaticResource UploadIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <TextBlock Text="Connections" Style="{StaticResource SidebarHeading}"/>
+                            <RadioButton x:Name="OverviewNav" GroupName="Pages" Content="Devices" Tag="{StaticResource DevicesIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <RadioButton x:Name="WifiNav" GroupName="Pages" Content="Wi-Fi" Tag="{StaticResource WifiIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <RadioButton x:Name="BatchNav" GroupName="Pages" Content="Multiple devices" Tag="{StaticResource DevicesIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <TextBlock Text="Files &amp; apps" Style="{StaticResource SidebarHeading}"/>
+                            <RadioButton x:Name="FilesNav" GroupName="Pages" Content="Files" Tag="{StaticResource UploadIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
                             <RadioButton x:Name="AppsNav" GroupName="Pages" Content="Apps" Tag="{StaticResource PackageIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <RadioButton x:Name="ApkNav" GroupName="Pages" Content="APK-Installer" Tag="{StaticResource PackageIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <RadioButton x:Name="ApkNav" GroupName="Pages" Content="APK installer" Tag="{StaticResource PackageIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
                             <RadioButton x:Name="BackupNav" GroupName="Pages" Content="Backups" Tag="{StaticResource PackageIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <TextBlock Text="Steuerung" Style="{StaticResource SidebarHeading}"/>
-                            <RadioButton x:Name="ScreenNav" GroupName="Pages" Content="Bildschirm" Tag="{StaticResource ScreenIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <TextBlock Text="Control" Style="{StaticResource SidebarHeading}"/>
+                            <RadioButton x:Name="ScreenNav" GroupName="Pages" Content="Screen" Tag="{StaticResource ScreenIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
                             <RadioButton x:Name="MediaNav" GroupName="Pages" Content="Studio" Tag="{StaticResource CameraIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <RadioButton x:Name="RemoteNav" GroupName="Pages" Content="Fernbedienung" Tag="{StaticResource DevicesIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <TextBlock Text="Diagnose" Style="{StaticResource SidebarHeading}"/>
-                            <RadioButton x:Name="HealthNav" GroupName="Pages" Content="Gerätemonitor" Tag="{StaticResource ActivityIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <RadioButton x:Name="ConsoleNav" GroupName="Pages" Content="ADB-Konsole" Tag="{StaticResource TerminalIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <RadioButton x:Name="MacrosNav" GroupName="Pages" Visibility="Collapsed" Content="Makrobibliothek" Style="{StaticResource Nav}" Checked="OnNavigate"/>
-                            <RadioButton x:Name="ActivityNav" GroupName="Pages" Content="Aktivität" Tag="{StaticResource ActivityIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <RadioButton x:Name="RemoteNav" GroupName="Pages" Content="Remote control" Tag="{StaticResource DevicesIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <TextBlock Text="Diagnostics" Style="{StaticResource SidebarHeading}"/>
+                            <RadioButton x:Name="HealthNav" GroupName="Pages" Content="Device monitor" Tag="{StaticResource ActivityIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <RadioButton x:Name="ConsoleNav" GroupName="Pages" Content="ADB console" Tag="{StaticResource TerminalIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <RadioButton x:Name="MacrosNav" GroupName="Pages" Visibility="Collapsed" Content="Macro library" Style="{StaticResource Nav}" Checked="OnNavigate"/>
+                            <RadioButton x:Name="ActivityNav" GroupName="Pages" Content="Activity" Tag="{StaticResource ActivityIcon}" Style="{StaticResource Nav}" Checked="OnNavigate"/>
                         </StackPanel>
                         </ScrollViewer>
                     </DockPanel>
@@ -72,7 +72,7 @@
                         </StackPanel>
                         <ComboBox x:Name="Devices" Grid.Column="1" Height="40" VerticalAlignment="Top" Margin="0,5,0,0"
                                   Style="{StaticResource DevicePicker}" SelectionChanged="OnSelectedDevice"
-                                  AutomationProperties.Name="Aktives Android-Gerät">
+                                  AutomationProperties.Name="Active Android device">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>
@@ -114,8 +114,8 @@
                                             <TextBlock x:Name="HeroTitle" FontSize="31" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,11,0,7"/>
                                             <TextBlock x:Name="HeroDescription" Style="{StaticResource MutedText}" MaxWidth="348" HorizontalAlignment="Left" Margin="0,0,0,20"/>
                                             <StackPanel Orientation="Horizontal">
-                                                <Button Style="{StaticResource Primary}" Content="WLAN einrichten" Click="OnGoToWifi"/>
-                                                <Button x:Name="ReloadButton" Style="{StaticResource Action}" Content="Aktualisieren" Click="OnReload" Margin="8,0,0,0"/>
+                                                <Button Style="{StaticResource Primary}" Content="Set up Wi-Fi" Click="OnGoToWifi"/>
+                                                <Button x:Name="ReloadButton" Style="{StaticResource Action}" Content="Refresh" Click="OnReload" Margin="8,0,0,0"/>
                                             </StackPanel>
                                         </StackPanel>
                                     </Grid>
@@ -124,8 +124,8 @@
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="1.25*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                     <Border Style="{StaticResource Tile}" Padding="17">
                                         <StackPanel>
-                                            <TextBlock Text="Verfügbare Geräte" Style="{StaticResource SectionTitle}" Margin="0,0,0,11"/>
-                                            <TextBlock x:Name="NoDevices" Text="Noch keine Geräte erkannt." Style="{StaticResource MutedText}"/>
+                                            <TextBlock Text="Available devices" Style="{StaticResource SectionTitle}" Margin="0,0,0,11"/>
+                                            <TextBlock x:Name="NoDevices" Text="No devices found." Style="{StaticResource MutedText}"/>
                                             <ItemsControl x:Name="DeviceRows">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
@@ -164,8 +164,8 @@
                                                 <Path Data="{StaticResource UsbIcon}" Style="{StaticResource Icon}"/>
                                             </Border>
                                             <StackPanel Grid.Column="1">
-                                                <TextBlock Text="Per USB verbinden" Style="{StaticResource SectionTitle}"/>
-                                                <TextBlock Text="Aktiviere USB-Debugging, schließe das Gerät an und bestätige die Freigabe auf Android."
+                                                <TextBlock Text="Connect via USB" Style="{StaticResource SectionTitle}"/>
+                                                <TextBlock Text="Enable USB debugging, connect your device, and approve the prompt on Android."
                                                            Style="{StaticResource MutedText}" Margin="0,5,0,0"/>
                                             </StackPanel>
                                         </Grid>
@@ -181,17 +181,17 @@
                                                   Style="{StaticResource Icon}" Width="21" Height="21"/>
                                         </Border>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,12,0">
-                                            <TextBlock Text="Per QR-Code koppeln" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="QR-Code mit dem WLAN-Debugging-Scanner auf Android scannen." Style="{StaticResource MutedText}" Margin="0,3,0,0"/>
+                                            <TextBlock Text="Pair with QR code" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="Scan this QR code with the Wireless debugging scanner on Android." Style="{StaticResource MutedText}" Margin="0,3,0,0"/>
                                         </StackPanel>
-                                        <Button x:Name="QrButton" Grid.Column="2" Content="QR-Code anzeigen" Style="{StaticResource Primary}"
+                                        <Button x:Name="QrButton" Grid.Column="2" Content="Show QR code" Style="{StaticResource Primary}"
                                                 Click="OnShowQr" VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>
                                 <Border Style="{StaticResource Tile}" Padding="17" Margin="0,0,0,15">
                                     <StackPanel>
-                                        <TextBlock Text="Gespeicherte WLAN-Geräte" Style="{StaticResource SectionTitle}" Margin="0,0,0,9"/>
-                                        <TextBlock x:Name="NoSavedWifi" Text="Verbundene WLAN-Geräte werden hier gespeichert." Style="{StaticResource MutedText}"/>
+                                        <TextBlock Text="Saved Wi-Fi devices" Style="{StaticResource SectionTitle}" Margin="0,0,0,9"/>
+                                        <TextBlock x:Name="NoSavedWifi" Text="Connected Wi-Fi devices are saved here." Style="{StaticResource MutedText}"/>
                                         <ItemsControl x:Name="SavedWifiRows">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
@@ -207,7 +207,7 @@
                                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                                 <Button Content="{Binding Action}" IsEnabled="{Binding CanToggle}" Style="{StaticResource Action}"
                                                                         MinWidth="105" MinHeight="34" Click="OnToggleSavedWifi"/>
-                                                                <Button Content="Entfernen" IsEnabled="{Binding CanRemove}" Style="{StaticResource Action}"
+                                                                <Button Content="Remove" IsEnabled="{Binding CanRemove}" Style="{StaticResource Action}"
                                                                         MinHeight="34" Margin="6,0,0,0" Click="OnRemoveSavedWifi"/>
                                                             </StackPanel>
                                                         </Grid>
@@ -224,16 +224,16 @@
                                             <Border Style="{StaticResource IconTile}" HorizontalAlignment="Left" Margin="0,0,0,15">
                                                 <Path Data="{StaticResource WifiIcon}" Style="{StaticResource Icon}"/>
                                             </Border>
-                                            <TextBlock Text="1. Gerät koppeln" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="Öffne auf Android WLAN-Debugging und tippe auf „Gerät über Kopplungscode koppeln“."
+                                            <TextBlock Text="1. Pair device" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="Open Wireless debugging on Android and tap “Pair device with pairing code.”"
                                                        Style="{StaticResource MutedText}" Margin="0,6,0,18" MinHeight="43"/>
-                                            <Label Content="Kopplungsadresse mit Port" Target="{Binding ElementName=PairAddress}" Foreground="{StaticResource Ink}" Padding="0,0,0,6"/>
+                                            <Label Content="Pairing address and port" Target="{Binding ElementName=PairAddress}" Foreground="{StaticResource Ink}" Padding="0,0,0,6"/>
                                             <TextBox x:Name="PairAddress" Style="{StaticResource Field}" CaretBrush="{StaticResource Ink}" MaxLength="255"
-                                                     AutomationProperties.Name="Kopplungsadresse mit Port"/>
-                                            <Label Content="Sechsstelliger Code" Target="{Binding ElementName=PairCode}" Foreground="{StaticResource Ink}" Padding="0,13,0,6"/>
+                                                     AutomationProperties.Name="Pairing address and port"/>
+                                            <Label Content="Six-digit code" Target="{Binding ElementName=PairCode}" Foreground="{StaticResource Ink}" Padding="0,13,0,6"/>
                                             <PasswordBox x:Name="PairCode" Style="{StaticResource Field}" CaretBrush="{StaticResource Ink}" MaxLength="6"
-                                                         AutomationProperties.Name="Sechsstelliger Code" KeyDown="OnPairKey"/>
-                                            <Button x:Name="PairButton" Content="Gerät koppeln" Style="{StaticResource Primary}" Click="OnPair" Margin="0,18,0,0"/>
+                                                         AutomationProperties.Name="Six-digit code" KeyDown="OnPairKey"/>
+                                            <Button x:Name="PairButton" Content="Pair device" Style="{StaticResource Primary}" Click="OnPair" Margin="0,18,0,0"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Grid.Column="2" Style="{StaticResource Tile}">
@@ -241,19 +241,19 @@
                                             <Border Style="{StaticResource IconTile}" HorizontalAlignment="Left" Margin="0,0,0,15">
                                                 <Path Data="{StaticResource DevicesIcon}" Style="{StaticResource Icon}"/>
                                             </Border>
-                                            <TextBlock Text="2. Gerät verbinden" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="Wenn das gekoppelte Gerät nicht von selbst erscheint, nutze die Adresse von der Hauptseite des WLAN-Debuggings."
+                                            <TextBlock Text="2. Connect device" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="If the paired device does not appear automatically, use the address from the main Wireless debugging screen."
                                                        Style="{StaticResource MutedText}" Margin="0,6,0,18" MinHeight="43"/>
-                                            <Label Content="Verbindungsadresse mit Port" Target="{Binding ElementName=ConnectAddress}" Foreground="{StaticResource Ink}" Padding="0,0,0,6"/>
+                                            <Label Content="Connection address and port" Target="{Binding ElementName=ConnectAddress}" Foreground="{StaticResource Ink}" Padding="0,0,0,6"/>
                                             <TextBox x:Name="ConnectAddress" Style="{StaticResource Field}" CaretBrush="{StaticResource Ink}" MaxLength="255"
-                                                     AutomationProperties.Name="Verbindungsadresse mit Port" KeyDown="OnConnectKey"/>
-                                            <TextBlock Text="Der Verbindungsport unterscheidet sich vom Kopplungsport." Style="{StaticResource MutedText}" Margin="0,13,0,0"/>
-                                            <Button x:Name="ConnectButton" Content="Gerät verbinden" Style="{StaticResource Primary}" Click="OnConnect" Margin="0,18,0,0"/>
+                                                     AutomationProperties.Name="Connection address and port" KeyDown="OnConnectKey"/>
+                                            <TextBlock Text="The connection port is different from the pairing port." Style="{StaticResource MutedText}" Margin="0,13,0,0"/>
+                                            <Button x:Name="ConnectButton" Content="Connect device" Style="{StaticResource Primary}" Click="OnConnect" Margin="0,18,0,0"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
                                 <Border CornerRadius="8" Background="{StaticResource Surface}" Padding="13,10" Margin="0,16,0,0">
-                                    <TextBlock Text="WLAN-Debugging ist ab Android 11 verfügbar. PC und Android-Gerät müssen im selben Netzwerk sein."
+                                    <TextBlock Text="Wireless debugging requires Android 11 or later. Your PC and Android device must be on the same network."
                                                Style="{StaticResource MutedText}"/>
                                 </Border>
                             </StackPanel>
@@ -267,9 +267,9 @@
                                             <Border Style="{StaticResource IconTile}" Width="54" Height="54" CornerRadius="14" Margin="0,0,0,15">
                                                 <Path Data="{StaticResource UploadIcon}" Style="{StaticResource Icon}" Width="23" Height="23"/>
                                             </Border>
-                                            <TextBlock Text="APK-Dateien hier ablegen" Style="{StaticResource SectionTitle}" TextAlignment="Center"/>
+                                            <TextBlock Text="Drop APK files here" Style="{StaticResource SectionTitle}" TextAlignment="Center"/>
                                             <TextBlock x:Name="ApkHint" Style="{StaticResource MutedText}" TextAlignment="Center" Margin="0,7,0,17"/>
-                                            <Button x:Name="InstallButton" Style="{StaticResource Primary}" Content="APK auswählen" Click="OnInstall" HorizontalAlignment="Center"/>
+                                            <Button x:Name="InstallButton" Style="{StaticResource Primary}" Content="Choose APK" Click="OnInstall" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -279,12 +279,12 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <StackPanel Margin="0,0,16,0">
-                                            <TextBlock Text="Ton am Gerät lassen" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="Keep audio on device" Style="{StaticResource SectionTitle}"/>
                                             <TextBlock x:Name="AudioOutputDescription" Style="{StaticResource MutedText}" Margin="0,4,0,0"/>
                                         </StackPanel>
                                         <ToggleButton x:Name="KeepAudioToggle" Grid.Column="1" Width="48" Height="28" VerticalAlignment="Center"
-                                                      Cursor="Hand" AutomationProperties.Name="Ton am Gerät lassen"
-                                                      AutomationProperties.HelpText="Ein Wechsel öffnet laufende Bildschirmfenster kurz neu.">
+                                                      Cursor="Hand" AutomationProperties.Name="Keep audio on device"
+                                                      AutomationProperties.HelpText="Changing this setting reopens active screen windows.">
                                             <ToggleButton.Template>
                                                 <ControlTemplate TargetType="ToggleButton">
                                                     <Border x:Name="Track" Background="{StaticResource Raised}" BorderBrush="{StaticResource Line}"
@@ -318,12 +318,12 @@
                                             <Border Style="{StaticResource IconTile}" HorizontalAlignment="Left" Margin="0,0,0,15">
                                                 <Path Data="{StaticResource ScreenIcon}" Style="{StaticResource Icon}"/>
                                             </Border>
-                                            <TextBlock Text="Live-Steuerung" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="Steuere Android mit Maus und Tastatur. Öffne die Makro-Steuerung bei Bedarf in einem eigenen Fenster."
+                                            <TextBlock Text="Live control" Style="{StaticResource SectionTitle}"/>
+                                            <TextBlock Text="Control Android with your mouse and keyboard. Open macro controls in a separate window when needed."
                                                        Style="{StaticResource MutedText}" Margin="0,6,0,18" MinHeight="47"/>
                                             <WrapPanel>
-                                                <Button x:Name="MirrorButton" Content="Bildschirm steuern" Style="{StaticResource Primary}" Click="OnMirror" Margin="0,0,8,6"/>
-                                                <Button x:Name="MacroControlsButton" Content="Makro-Steuerung öffnen" Style="{StaticResource Action}" Click="OnOpenMacroControls" Margin="0,0,0,6"/>
+                                                <Button x:Name="MirrorButton" Content="Control screen" Style="{StaticResource Primary}" Click="OnMirror" Margin="0,0,8,6"/>
+                                                <Button x:Name="MacroControlsButton" Content="Open macro controls" Style="{StaticResource Action}" Click="OnOpenMacroControls" Margin="0,0,0,6"/>
                                             </WrapPanel>
                                         </StackPanel>
                                     </Border>
@@ -333,21 +333,21 @@
                                                 <Path Data="{StaticResource CameraIcon}" Style="{StaticResource Icon}"/>
                                             </Border>
                                             <TextBlock Text="Screenshot" Style="{StaticResource SectionTitle}"/>
-                                            <TextBlock Text="Speichere den aktuellen Bildschirm des ausgewählten Geräts als PNG auf deinem PC."
+                                            <TextBlock Text="Save the selected device’s current screen as a PNG on your PC."
                                                        Style="{StaticResource MutedText}" Margin="0,6,0,18" MinHeight="47"/>
-                                            <Button x:Name="ScreenshotButton" Content="Screenshot speichern" Style="{StaticResource Action}" Click="OnScreenshot"/>
+                                            <Button x:Name="ScreenshotButton" Content="Save screenshot" Style="{StaticResource Action}" Click="OnScreenshot"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
                                 <TextBlock x:Name="ScreenHint" Style="{StaticResource MutedText}" Margin="1,15,0,0"/>
                                 <Border Style="{StaticResource Tile}" Margin="0,15,0,0">
                                     <StackPanel>
-                                        <TextBlock Text="Bildschirmwerkzeuge" Style="{StaticResource SectionTitle}" Margin="0,0,0,9"/>
+                                        <TextBlock Text="Screen tools" Style="{StaticResource SectionTitle}" Margin="0,0,0,9"/>
                                         <WrapPanel>
-                                            <Button x:Name="OpenVirtualDisplaysButton" Content="Virtuelle Displays" Style="{StaticResource Action}" Click="OnOpenVirtualDisplays" Margin="0,0,8,6"/>
-                                            <Button Content="Bildschirmaufnahme" Style="{StaticResource Action}" Click="OnOpenRecording" Margin="0,0,8,6"/>
-                                            <Button Content="Handy-Kamera" Style="{StaticResource Action}" Click="OnOpenCamera" Margin="0,0,8,6"/>
-                                            <Button Content="Makrobibliothek" Style="{StaticResource Action}" Click="OnOpenMacroLibrary" Margin="0,0,0,6"/>
+                                            <Button x:Name="OpenVirtualDisplaysButton" Content="Virtual displays" Style="{StaticResource Action}" Click="OnOpenVirtualDisplays" Margin="0,0,8,6"/>
+                                            <Button Content="Screen recording" Style="{StaticResource Action}" Click="OnOpenRecording" Margin="0,0,8,6"/>
+                                            <Button Content="Phone camera" Style="{StaticResource Action}" Click="OnOpenCamera" Margin="0,0,8,6"/>
+                                            <Button Content="Macro library" Style="{StaticResource Action}" Click="OnOpenMacroLibrary" Margin="0,0,0,6"/>
                                         </WrapPanel>
                                     </StackPanel>
                                 </Border>
@@ -358,15 +358,15 @@
                         <Grid>
                             <TextBox x:Name="ActivityLog" IsReadOnly="True" IsUndoEnabled="False" TextWrapping="Wrap"
                                      BorderThickness="0" Background="{StaticResource Surface}" Foreground="{StaticResource Ink}" Padding="4"
-                                     FontFamily="Consolas" FontSize="13" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Aktivitätsprotokoll"/>
-                            <TextBlock x:Name="EmptyActivity" Text="Noch keine Aktivitäten." Style="{StaticResource MutedText}" Margin="4" IsHitTestVisible="False"/>
+                                     FontFamily="Consolas" FontSize="13" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Activity log"/>
+                            <TextBlock x:Name="EmptyActivity" Text="No activity yet." Style="{StaticResource MutedText}" Margin="4" IsHitTestVisible="False"/>
                         </Grid>
                     </Border>
                     <Border x:Name="Feedback" Grid.Row="2" Visibility="Collapsed" Margin="0,12,0,0" Padding="12,8" CornerRadius="8"
                             Background="{StaticResource AccentSoft}">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Click="OnDismissFeedback" Style="{StaticResource ChromeButton}" Width="28" Height="26"
-                                    AutomationProperties.Name="Hinweis schließen">
+                                    AutomationProperties.Name="Dismiss notification">
                                 <Path Data="{StaticResource CloseIcon}" Style="{StaticResource Icon}" Width="10" Height="10"/>
                             </Button>
                             <TextBlock x:Name="FeedbackText" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,8,0"
@@ -378,10 +378,10 @@
             <Grid x:Name="ToolsOverlay" Background="#CC08090E" Panel.ZIndex="1" Visibility="Collapsed">
                 <Border Style="{StaticResource Tile}" Background="{StaticResource Sidebar}" BorderBrush="#47425B" Width="542" Padding="25"
                         HorizontalAlignment="Center" VerticalAlignment="Center" KeyboardNavigation.TabNavigation="Cycle"
-                        AutomationProperties.Name="ADB und scrcpy einrichten">
+                        AutomationProperties.Name="Set up ADB and scrcpy">
                     <StackPanel>
                         <DockPanel>
-                            <Button DockPanel.Dock="Right" Click="OnCloseTools" Style="{StaticResource ChromeButton}" Width="34" AutomationProperties.Name="Dialog schließen">
+                            <Button DockPanel.Dock="Right" Click="OnCloseTools" Style="{StaticResource ChromeButton}" Width="34" AutomationProperties.Name="Close dialog">
                                 <Path Data="{StaticResource CloseIcon}" Style="{StaticResource Icon}" Width="13" Height="13"/>
                             </Button>
                             <Border x:Name="ModalIcon" Style="{StaticResource IconTile}" HorizontalAlignment="Left">
@@ -421,7 +421,7 @@
                                                          BorderThickness="0" Padding="0" MaxHeight="55" VerticalScrollBarVisibility="Auto"
                                                          AutomationProperties.Name="{Binding Title}"/>
                                             </StackPanel>
-                                            <Button Grid.Column="1" Content="Ordner öffnen" Style="{StaticResource Action}" MinHeight="33"
+                                            <Button Grid.Column="1" Content="Open folder" Style="{StaticResource Action}" MinHeight="33"
                                                     VerticalAlignment="Center" Click="OnOpenToolFolder"/>
                                         </Grid>
                                     </Border>
@@ -432,10 +432,10 @@
                                    Margin="0,10,0,0" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite"/>
                         <ProgressBar x:Name="ToolsProgress" Height="5" Margin="0,10,0,0" Visibility="Collapsed" IsIndeterminate="True"
                                      Foreground="{StaticResource Accent}" Background="{StaticResource Raised}" BorderThickness="0"
-                                     AutomationProperties.Name="Automatische Einrichtung läuft"/>
+                                     AutomationProperties.Name="Automatic setup in progress"/>
                         <DockPanel Margin="0,18,0,0" LastChildFill="False">
-                            <Button x:Name="AutoToolsButton" DockPanel.Dock="Right" Content="Automatisch einrichten" Click="OnAutoTools" Style="{StaticResource Primary}"/>
-                            <Button x:Name="ChooseToolsButton" Content="Ordner auswählen" Click="OnChooseTools" Style="{StaticResource Action}"/>
+                            <Button x:Name="AutoToolsButton" DockPanel.Dock="Right" Content="Set up automatically" Click="OnAutoTools" Style="{StaticResource Primary}"/>
+                            <Button x:Name="ChooseToolsButton" Content="Choose folder" Click="OnChooseTools" Style="{StaticResource Action}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
@@ -443,39 +443,39 @@
             <Grid x:Name="QrOverlay" Background="#CC08090E" Panel.ZIndex="1" Visibility="Collapsed">
                 <Border Style="{StaticResource Tile}" Background="{StaticResource Sidebar}" BorderBrush="#47425B" Width="460" Padding="25"
                         HorizontalAlignment="Center" VerticalAlignment="Center" KeyboardNavigation.TabNavigation="Cycle"
-                        AutomationProperties.Name="ADB-Kopplung per QR-Code">
+                        AutomationProperties.Name="Pair ADB with a QR code">
                     <StackPanel>
                         <DockPanel>
                             <Button x:Name="CloseQrButton" DockPanel.Dock="Right" Click="OnCloseQr" Style="{StaticResource ChromeButton}" Width="34"
-                                    AutomationProperties.Name="QR-Dialog schließen">
+                                    AutomationProperties.Name="Close QR code dialog">
                                 <Path Data="{StaticResource CloseIcon}" Style="{StaticResource Icon}" Width="13" Height="13"/>
                             </Button>
-                            <TextBlock Text="Mit QR-Code koppeln" FontSize="25" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Text="Pair with QR code" FontSize="25" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </DockPanel>
-                        <TextBlock Text="Öffne auf Android WLAN-Debugging und wähle „Gerät über QR-Code koppeln“."
+                        <TextBlock Text="Open Wireless debugging on Android and select “Pair device with QR code.”"
                                    Style="{StaticResource MutedText}" Margin="0,7,0,16"/>
                         <Border x:Name="QrPlate" Background="White" CornerRadius="12" Width="232" Height="232" HorizontalAlignment="Center">
                             <Image x:Name="QrImage" Width="220" Height="220" RenderOptions.BitmapScalingMode="NearestNeighbor"
-                                   AutomationProperties.Name="QR-Code für die ADB-Kopplung"/>
+                                   AutomationProperties.Name="QR code for ADB pairing"/>
                         </Border>
                         <TextBlock x:Name="QrStatus" TextWrapping="Wrap" TextAlignment="Center" Foreground="{StaticResource Accent}"
                                    Margin="0,15,0,0" AutomationProperties.LiveSetting="Polite"/>
                         <DockPanel Margin="0,17,0,0" LastChildFill="False">
-                            <Button DockPanel.Dock="Right" Content="Schließen" Click="OnCloseQr" Style="{StaticResource Action}"/>
-                            <Button x:Name="RetryQrButton" Content="Neuen QR-Code erstellen" Click="OnRetryQr" Style="{StaticResource Primary}" Visibility="Collapsed"/>
+                            <Button DockPanel.Dock="Right" Content="Close" Click="OnCloseQr" Style="{StaticResource Action}"/>
+                            <Button x:Name="RetryQrButton" Content="Generate new QR code" Click="OnRetryQr" Style="{StaticResource Primary}" Visibility="Collapsed"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
             </Grid>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,6,0" Panel.ZIndex="2">
                 <Button Style="{StaticResource ChromeButton}" Content="&#x2212;" Click="OnMinimize" shell:WindowChrome.IsHitTestVisibleInChrome="True"
-                        ToolTip="Minimieren" AutomationProperties.Name="Minimieren"/>
+                        ToolTip="Minimize" AutomationProperties.Name="Minimize"/>
                 <Button x:Name="MaximizeButton" Style="{StaticResource ChromeButton}" Click="OnMaximize" shell:WindowChrome.IsHitTestVisibleInChrome="True"
-                        ToolTip="Maximieren" AutomationProperties.Name="Maximieren">
+                        ToolTip="Maximize" AutomationProperties.Name="Maximize">
                     <Path x:Name="MaximizeIcon" Data="M 1,1 H 11 V 11 H 1 Z" Stroke="{StaticResource Muted}" Width="11" Height="11" Stretch="Uniform"/>
                 </Button>
                 <Button Style="{StaticResource ChromeButton}" Click="OnClose" shell:WindowChrome.IsHitTestVisibleInChrome="True"
-                        ToolTip="Schließen" AutomationProperties.Name="Schließen">
+                        ToolTip="Close" AutomationProperties.Name="Close">
                     <Path Data="{StaticResource CloseIcon}" Style="{StaticResource Icon}" Stroke="{StaticResource Muted}" Width="12" Height="12"/>
                 </Button>
             </StackPanel>

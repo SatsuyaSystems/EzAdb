@@ -22,11 +22,11 @@ internal static class ToolInstaller
     {
         if (Package.Platform.Length == 0)
         {
-            throw new PlatformNotSupportedException("Für diese Windows-Architektur ist kein automatisches Paket verfügbar.");
+            throw new PlatformNotSupportedException("Automatic setup is unavailable for this Windows architecture.");
         }
 
         Directory.CreateDirectory(root);
-        progress?.Report("Suche nach bereits eingerichteten Tools …");
+        progress?.Report("Looking for existing tools…");
         foreach (var directory in Directory.EnumerateDirectories(root, $"{PackageName}*"))
         {
             if (await ReadyAsync(directory, cancellation).ConfigureAwait(false) is { } existing)
@@ -35,7 +35,7 @@ internal static class ToolInstaller
             }
         }
 
-        progress?.Report("ADB und scrcpy werden heruntergeladen …");
+        progress?.Report("Downloading ADB and scrcpy…");
         using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2), MaxResponseContentBufferSize = 40 * 1024 * 1024 };
         using var response = await client.GetAsync(
             $"https://github.com/Genymobile/scrcpy/releases/download/v{Version}/{PackageName}.zip", cancellation)
@@ -49,17 +49,17 @@ internal static class ToolInstaller
         CancellationToken cancellation)
     {
         cancellation.ThrowIfCancellationRequested();
-        progress?.Report("Prüfsumme wird geprüft …");
+        progress?.Report("Verifying checksum…");
         if (!Convert.ToHexString(SHA256.HashData(download)).Equals(Package.Sha256, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidDataException("Die Prüfsumme des Downloads stimmt nicht. Starte die Einrichtung erneut.");
+            throw new InvalidDataException("The download checksum does not match. Run setup again.");
         }
 
         var staging = Path.Combine(root, $".setup-{Guid.NewGuid():N}");
         Directory.CreateDirectory(staging);
         try
         {
-            progress?.Report("Das geprüfte Paket wird entpackt …");
+            progress?.Report("Extracting the verified package…");
             await Task.Run(() =>
             {
                 using var stream = new MemoryStream(download, writable: false);
@@ -68,10 +68,10 @@ internal static class ToolInstaller
             }, cancellation).ConfigureAwait(false);
 
             var unpacked = Path.Combine(staging, PackageName);
-            progress?.Report("ADB und scrcpy werden geprüft …");
+            progress?.Report("Checking ADB and scrcpy…");
             if (await ReadyAsync(unpacked, cancellation).ConfigureAwait(false) is null)
             {
-                throw new InvalidOperationException("Die entpackten Tools konnten nicht gestartet werden.");
+                throw new InvalidOperationException("Could not start the extracted tools.");
             }
 
             cancellation.ThrowIfCancellationRequested();

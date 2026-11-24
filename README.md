@@ -1,38 +1,38 @@
 # EzAdb
 
-EzAdb ist eine Windows-App zur Verwaltung von Android-Geräten über ADB.
+EzAdb is a Windows desktop app for managing Android devices over USB or Wi-Fi with ADB and scrcpy. Install APKs, control and record screens, browse files, and run macros from one place.
 
-## Start
+## Getting started
 
-Das ZIP `EzAdb-win-x64.zip` aus den [GitHub-Releases](https://github.com/SatsuyaSystems/EzAdb/releases) vollständig entpacken und `EzAdb.exe` öffnen. Die .NET-Laufzeit ist enthalten. Richte ADB und scrcpy bei Bedarf beim ersten Start über **Automatisch einrichten** ein. Wähle links den gewünschten Bereich und oben rechts das aktive Gerät.
+1. Download `EzAdb-win-x64.zip` from the [latest release](https://github.com/SatsuyaSystems/EzAdb/releases/latest).
+2. Extract the entire ZIP and open `EzAdb.exe`. The .NET runtime is included. Choose **Set up automatically** to download ADB and scrcpy if needed.
+3. Enable USB debugging in Android developer options, connect a USB cable, and approve the prompt on Android. For Wi-Fi, open **Wireless debugging** on Android and pair with a QR code or six-digit pairing code in EzAdb. If a paired device does not appear, enter the connection address shown on Android. Saved Wi-Fi devices can be disconnected and reconnected from the Wi-Fi page. [ADB documentation](https://developer.android.com/tools/adb#wireless-android11-command-line)
 
-- **USB** – USB-Debugging in den Android-Entwickleroptionen aktivieren, das Gerät per USB anschließen und die Debugging-Freigabe auf dem Gerät bestätigen.
-- **WLAN** – In EzAdb **QR-Code anzeigen** wählen. Auf Android unter **WLAN-Debugging → Gerät über QR-Code koppeln** scannen. Die Kopplung per sechsstelligen Code und die manuelle Verbindung über die Adresse von der WLAN-Debugging-Hauptseite stehen ebenfalls zur Verfügung. Unter **Gespeicherte WLAN-Geräte** kannst du die Netzwerkverbindung gezielt trennen und wiederherstellen. [ADB-Dokumentation](https://developer.android.com/tools/adb#wireless-android11-command-line)
-- **APK-Installer** – Eine oder mehrere einzelne APK-Dateien auswählen oder im APK-Installer ablegen. Beim Installieren eines Updates bleiben die vorhandenen App-Daten erhalten.
-- **Bildschirm** – **Ton am Gerät lassen** ist standardmäßig aktiv. So spielt Android weiter über seine verbundenen Lautsprecher oder Kopfhörer. Beim Umschalten speichert EzAdb die Auswahl und öffnet laufende Bildschirmfenster kurz neu. **Screenshot speichern** speichert ein PNG. [scrcpy-Audio](https://github.com/Genymobile/scrcpy/blob/master/doc/audio.md)
+## What you can do
 
-## Gerätefunktionen
+- **Screen control** — Use your mouse and keyboard, save screenshots, and choose whether audio plays on Android or your PC. **Keep audio on device** is on by default. Changing it reopens active screen windows. [scrcpy audio documentation](https://github.com/Genymobile/scrcpy/blob/v5.0.1/doc/audio.md)
+- **Files** — Browse Android folders with Quick access, breadcrumbs, back and forward navigation, and search. Use the context menu to rename, delete, or save items. Drag files from Windows onto the file list or a folder. To drag files the other way, select them and choose **Prepare for drag and drop**.
+- **Windows File Explorer** — Open **Files → File Explorer**. For USB access, enable **File transfer** on Android and find the phone under **This PC**. Wireless File Explorer access uses Link to Windows and requires Windows 11 and Android 11 or later. [Microsoft walkthrough](https://support.microsoft.com/en-us/windows/experience/fileexplorer/setting-up-and-using-your-phone-in-file-explorer)
+- **Apps and APKs** — Install APKs, update existing apps, and manage installed apps. You can launch, stop, enable, disable, or uninstall apps, view details, and export base and split APKs.
+- **Studio** — Record MP4 video with configurable bitrate, FPS, and resolution. Device audio requires Android 11 or later. Keeping playback on Android while recording audio requires Android 13 or later. Camera preview and recording require Android 12 or later. Saving camera photos uses FFmpeg from the tools folder or Windows PATH. [Recording](https://github.com/Genymobile/scrcpy/blob/v5.0.1/doc/recording.md) · [Camera](https://github.com/Genymobile/scrcpy/blob/v5.0.1/doc/camera.md)
+- **Virtual displays** — On Android 10 or later, use **Screen → Virtual displays → Choose app** to select an app by name and open it in a separate scrcpy window. Use the active Studio session to open another app on that display. [Virtual display documentation](https://github.com/Genymobile/scrcpy/blob/v5.0.1/doc/virtual-display.md)
+- **Macros and auto-clicker** — Open **Screen → Open macro controls** for an active session. Choose **Set click points**, click the preview to place numbered points, and set each point’s order, delay, hold time, and repeat count. Save the sequence, then use **Run** and **Stop**. Use the default scrcpy orientation while placing points and keep the Android orientation fixed while running. Configure autorun on device connection in **Screen → Macro library**.
+- **Remote control and ADB console** — Send Android keys and text, run ADB commands, view streaming output, and recall commands from the current session.
+- **Device monitor and batch actions** — View live battery, temperature, CPU, RAM, and storage metrics. Install APKs, transfer files, run ADB commands, or open screen windows for multiple devices.
+- **Backups** — Back up accessible Android files to a Windows folder and restore individual files or entire sources.
 
-- **Dateien** – Ordner per Doppelklick, Schnellzugriff oder Adressleiste öffnen. Mit **Alt+Links**, **Alt+Rechts** und **Alt+Hoch** durch Ordner navigieren. Dateien filtern, Unterordner durchsuchen und Einträge per Rechtsklick bearbeiten. Dateien aus Windows auf die Liste oder auf einen Ordner ziehen. Für die Gegenrichtung **Für Drag & Drop laden** wählen und die markierten Einträge anschließend in den Explorer ziehen.
-- **Windows-Explorer** – Unter **Dateien → Windows-Explorer** öffnest du **Dieser PC** oder die Windows-Einstellungen für mobile Geräte. Per USB erscheint der Android-Speicher nach Aktivierung der USB-Dateiübertragung. Kabellos verwendet der Windows-Explorer **Link zu Windows** auf Windows 11 und Android 11 oder neuer. [Microsoft-Anleitung](https://support.microsoft.com/en-us/windows/experience/fileexplorer/setting-up-and-using-your-phone-in-file-explorer)
-- **Apps** – Pakete des aktuellen Android-Nutzers nach Paket-ID oder verfügbarem App-Namen suchen. Apps starten, stoppen, aktivieren, deaktivieren oder deinstallieren. Der APK-Export speichert auch vorhandene Split-APKs.
-- **Gerätemonitor** – Akku, Temperatur, CPU, RAM und gemeinsamen Speicher im Vier-Sekunden-Takt beobachten. Android-Version, API, ABI und weitere Systemdetails stehen unter den Diagrammen.
-- **Studio** – MP4-Aufnahmen mit einstellbaren FPS, Bitrate und maximaler Kantenlänge erstellen. Geräteaudio wird ab Android 11 unterstützt. Wenn der Ton am Gerät bleiben soll, benötigt die Aufnahme Android 13 oder neuer. Live-Kameras und Kameravideos benötigen Android 12, virtuelle Displays Android 10. Kamera-PNGs verwenden FFmpeg aus PATH oder dem Ordner `tools`. [scrcpy-Aufnahme](https://github.com/Genymobile/scrcpy/blob/v5.0.1/doc/recording.md) · [Kamera](https://github.com/Genymobile/scrcpy/blob/v5.0.1/doc/camera.md) · [Virtuelle Displays](https://github.com/Genymobile/scrcpy/blob/v5.0.1/doc/virtual-display.md)
-- **Fernbedienung und ADB-Konsole** – Gerätetasten und Texteingabe über ADB nutzen. Die Konsole führt Befehle mit Windows-Anführungszeichen aus, zeigt die Ausgabe live und merkt sich Befehle für die Sitzung.
-- **Virtuelles Display mit App öffnen** – Unter **Bildschirm → Virtuelle Displays → App auswählen** nach einem App-Namen suchen und anschließend **Virtuelles Display öffnen** wählen. In der Liste der laufenden Studio-Sitzungen kannst du weitere Apps für das Display auswählen.
-- **Makros** – Wähle **Bildschirm → Makro-Steuerung öffnen**, um Makros in einem separaten Fenster zu bearbeiten, zu starten oder zu stoppen. Tippen, Wischen, Texte, Tasten und App-Starts verwenden das jeweilige virtuelle Display. Freie ADB-Befehle gelten für das Gerät. Den Verbindungs-Autostart findest du unter **Bildschirm → Makrobibliothek**.
-- **Auto-Klicker** – Wähle im Makrofenster **Klickpunkte setzen**, um direkt ins Livebild zu klicken. Pro Nummer bestimmst du Reihenfolge, Wartezeit vor jedem Druck, Haltedauer und Wiederholungen. Ein Klick auf die Nummer öffnet ihre Regeln, auch zum Versetzen oder Entfernen. Mit **Leiste versetzen** werden verdeckte Bildbereiche erreichbar. Nach dem Speichern kehrst du in die Makro-Steuerung zurück. Verwende beim Setzen die ungedrehte, ungespiegelte scrcpy-Ansicht und behalte die Android-Ausrichtung während des Ablaufs bei.
-- **Mehrere Geräte** – Installationen, Dateiübertragungen, ADB-Befehle und Bildschirmfenster parallel starten.
-- **Backups** – Zugängliche Android-Dateien in einen wählbaren Windows-Ordner sichern. Gesicherte Quellen oder einzelne Dateien lassen sich in ihre ursprünglichen Android-Ordner zurückspielen.
+Android version, device manufacturer, and work profile restrictions affect which features are available. ADB can access only the data Android exposes to it.
 
-Android, Gerätehersteller und Arbeitsprofile bestimmen, welche Befehle, Paketänderungen, Dateien, Sensorwerte und Aufnahmen über ADB verfügbar sind. Geschützte App-Daten und DRM-Inhalte bleiben durch Android geschützt.
+## Build and test
 
-## Aus Quellcode starten
+Use the .NET 8 SDK on Windows.
 
-Mit dem .NET 8 SDK unter Windows `dotnet run` ausführen. EzAdb findet ADB und scrcpy über PATH oder im Unterordner `tools` neben der EXE. Im Einrichtungsdialog richtet **Automatisch einrichten** beide Tools ein. Falls ein Download nötig ist, prüft EzAdb die SHA-256-Prüfsumme des offiziellen Pakets und speichert die Tools im Benutzerprofil. **Tools verwalten** zeigt die verwendeten Ordner und öffnet sie im Explorer. [Offizielle scrcpy-Pakete](https://github.com/Genymobile/scrcpy/releases/tag/v5.0.1)
+```powershell
+dotnet run
+dotnet publish -c Release -r win-x64 --self-contained true -p:DebugType=none -p:DebugSymbols=false -o artifacts/EzAdb-win-x64
+Start-Process .\artifacts\EzAdb-win-x64\EzAdb.exe -ArgumentList '--self-test' -Wait -PassThru
+```
 
-`dotnet publish -c Release -r win-x64 --self-contained true -p:DebugType=none -p:DebugSymbols=false -o artifacts/EzAdb-win-x64` erzeugt einen Windows-x64-Build mit Laufzeit.
+Exit code `0` indicates a passing self-test. EzAdb looks for ADB and scrcpy on PATH or in the `tools` folder next to the executable. Automatic setup verifies the official scrcpy archive against a pinned SHA-256 checksum. **Manage tools** shows where the executables are installed. [Official scrcpy packages](https://github.com/Genymobile/scrcpy/releases/tag/v5.0.1)
 
-EzAdb speichert Einstellungen, WLAN-Profile und Makros lokal im Benutzerprofil. Der automatische Tool-Download ruft das offizielle scrcpy-Paket auf GitHub ab.
-
-`Start-Process .\artifacts\EzAdb-win-x64\EzAdb.exe -ArgumentList '--self-test' -Wait -PassThru` führt den Selbsttest aus. Exit-Code `0` bedeutet Erfolg.
+EzAdb saves its settings, Wi-Fi device profiles, and macros locally in your Windows user profile. Automatic setup fetches the official scrcpy archive from GitHub.
